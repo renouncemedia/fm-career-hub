@@ -56,7 +56,7 @@ function download(s:string,n:string,t:string){const u=URL.createObjectURL(new Bl
 
 export default function Home(){
  const [session,setSession]=useState<any>(null),[career,setCareer]=useState<any>(null),[players,setPlayers]=useState<Player[]>([]);
- const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
+ const [loading,setLoading]=useState(true),[saving,setSaving]=useState(false),[statusUpdating,setStatusUpdating]=useState<string|null>(null),[error,setError]=useState(""),[notice,setNotice]=useState("");
  const [email,setEmail]=useState(""),[password,setPassword]=useState(""),[signup,setSignup]=useState(false),[resetMode,setResetMode]=useState(false),[recovery,setRecovery]=useState(false),[newPassword,setNewPassword]=useState("");
  const [search,setSearch]=useState(""),[filter,setFilter]=useState("Todos"),[promiseOnly,setPromiseOnly]=useState(false),[positionFilter,setPositionFilter]=useState("Todas"),[tagFilter,setTagFilter]=useState("Todas"),[minCa,setMinCa]=useState(""),[maxCa,setMaxCa]=useState(""),[minAge,setMinAge]=useState(""),[maxAge,setMaxAge]=useState(""),[tab,setTab]=useState("Plantel"),[theme,setTheme]=useState("dark");
  useEffect(()=>{document.documentElement.dataset.theme=theme;},[theme]);
