@@ -9,37 +9,37 @@ const formations:Record<string,Slot[]>={
 "4-2-3-1":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"DCE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"DCD",x:89,y:70},{id:"MD1",cat:"MD",x:36,y:54},{id:"MD2",cat:"MC",x:64,y:54},{id:"AE",cat:"MOE",x:15,y:33},{id:"MOC",cat:"MOC",x:50,y:32},{id:"AD",cat:"MOD",x:85,y:33},{id:"PL",cat:"PLD",x:50,y:12}],
 "4-4-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"PLE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"PLD",x:89,y:70},{id:"AE",cat:"PLE",x:10,y:46},{id:"MC1",cat:"MC",x:36,y:50},{id:"MC2",cat:"MC",x:64,y:50},{id:"AD",cat:"PLD",x:90,y:46},{id:"PL1",cat:"PLE",x:36,y:14},{id:"PL2",cat:"PLD",x:64,y:14}]};
 const catNames:Record<Category,string>={GR:"Guarda Redes",DC:"Defesa Centro",DCE:"Defesa Centro Esquerdo",DCD:"Defesa Centro Direito",MD:"Médio Defensivo",MC:"Médio Centro",MOC:"Médio Ofensivo Centro",MOD:"Médio Ofensivo Direito",MOE:"Médio Ofensivo Esquerdo",PLD:"Ponta Direito",PLE:"Ponta Esquerdo"};
-const norm=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]/g,"");
-const positionParts=(s:string)=>String(s||"").split(/[,;]/).map(norm).filter(Boolean);
+const norm=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+const positionParts=(s:string)=>String(s||"").split(/[,;|/]/).map(norm).filter(Boolean);
 function category(pos:string):Category{
- const parts=positionParts(pos);const p=parts[0]||norm(pos);
- if(parts.some(x=>/^(gk|gr|goalkeeper|guardaredes)$/.test(x)||x==="guardaredes"))return"GR";
- if(parts.some(x=>/^(dce|cbl|leftcb)$/.test(x)||x.includes("defesacentroesquerdo")||x.includes("centroesquerdo")))return"DCE";
- if(parts.some(x=>/^(dcd|cbr|rightcb)$/.test(x)||x.includes("defesacentrodireito")||x.includes("centrodireito")))return"DCD";
- if(parts.some(x=>/^(dc|cb|sw|defc)$/.test(x)||x==="defesacentro"||x==="central"))return"DC";
+ const parts=positionParts(pos);
+ if(parts.some(x=>/^(gk|gr|goalkeeper|guardaredes)$/.test(x)))return"GR";
+ if(parts.some(x=>/^(dce|cbl|leftcb|dlc|dcl|leftcenterback)$/.test(x)||x.includes("defesacentroesquerdo")||x.includes("centroesquerdo")))return"DCE";
+ if(parts.some(x=>/^(dcd|cbr|rightcb|drc|dcr|rightcenterback)$/.test(x)||x.includes("defesacentrodireito")||x.includes("centrodireito")))return"DCD";
+ if(parts.some(x=>/^(dc|cb|sw|defc|centraldefender)$/.test(x)||x==="defesacentro"||x==="central"))return"DC";
  if(parts.some(x=>/^(md|mdc|mcd|dm|dmc|defmid|mdef|mdm)$/.test(x)||x.includes("mediodefensivo")))return"MD";
- if(parts.some(x=>/^(mc|cm|m|mid|ml|mr|mcm|mec)$/.test(x)||x.includes("mediocentro")||x==="mediocnetro"))return"MC";
+ if(parts.some(x=>/^(mc|cm|m|mid|mcm|mec|mcl|mcr|centralmid)$/.test(x)||x.includes("mediocentro")))return"MC";
  if(parts.some(x=>/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(x)||x.includes("medioofensivocentro")))return"MOC";
- if(parts.some(x=>/^(mod|amr|rw|mofd|avd|amrd|mar)$/.test(x)||x.includes("medioofensivodireito")))return"MOD";
- if(parts.some(x=>/^(moe|aml|lw|mofe|ave|amle|mal)$/.test(x)||x.includes("medioofensivoesquerdo")))return"MOE";
- if(parts.some(x=>/^(pld|st|cf|av|f9|af|att|striker)$/.test(x)||x.includes("pontadireito")))return"PLD";
- if(parts.some(x=>/^(ple|leftstriker)$/.test(x)||x.includes("pontaesquerdo")))return"PLE";
+ if(parts.some(x=>/^(mod|amr|rw|mofd|avd|amrd|mar|mr|rightwing|rightmid)$/.test(x)||x.includes("medioofensivodireito")||x.includes("pontadireito")))return"MOD";
+ if(parts.some(x=>/^(moe|aml|lw|mofe|ave|amle|mal|ml|leftwing|leftmid)$/.test(x)||x.includes("medioofensivoesquerdo")||x.includes("pontaesquerdo")))return"MOE";
+ if(parts.some(x=>/^(pld|st|cf|av|f9|af|att|striker|stc|str)$/.test(x)))return"PLD";
+ if(parts.some(x=>/^(ple|leftstriker|stl)$/.test(x)||x.includes("pontaesquerdo")))return"PLE";
  return"MC";
 }
 function preferred(p:P,F:Slot[]){
- const raw=positionParts(p.position);const cats=raw.map(x=>category(x));const joined=raw.join("|");
- const rightDef=raw.some(x=>/^(dd|dr|rb|rwb|defd|alad|wbr)$/.test(x));
- const leftDef=raw.some(x=>/^(de|dl|lb|lwb|defe|alae|wbl)$/.test(x));
- const rightWide=raw.some(x=>/^(md|mr|mrd|rw|amr|ad|mofd|avd|amrd|mar)$/.test(x))||joined.includes("direit");
- const leftWide=raw.some(x=>/^(me|ml|mle|lw|aml|ae|mofe|ave|amle|mal)$/.test(x))||joined.includes("esquer");
- const central=raw.some(x=>/^(dc|dce|dcd|cb|sw|defc)$/.test(x))||joined.includes("central");
+ const raw=positionParts(p.position);const cats=raw.map(category);const joined=raw.join("|");
+ const rightDef=raw.some(x=>/^(dd|dr|rb|rwb|defd|alad|wbr|dcd|dcr|drc)$/.test(x));
+ const leftDef=raw.some(x=>/^(de|dl|lb|lwb|defe|alae|wbl|dce|dcl|dlc)$/.test(x));
+ const rightWide=raw.some(x=>/^(md|mr|mrd|rw|amr|ad|mod|mofd|avd|amrd|mar|pld|rightwing|rightmid)$/.test(x))||joined.includes("direit");
+ const leftWide=raw.some(x=>/^(me|ml|mle|lw|aml|ae|moe|mofe|ave|amle|mal|ple|leftwing|leftmid)$/.test(x))||joined.includes("esquer");
+ const central=raw.some(x=>/^(dc|dce|dcd|cb|sw|defc|dcl|dcr)$/.test(x))||joined.includes("central");
  const ids=rightDef?["DD","DC3","AD"]:leftDef?["DE","DC1","AE"]:rightWide?["AD","PL2","DD"]:leftWide?["AE","PL1","DE"]:central?["DC2","DC1","DC3"]:joined.includes("defens")?["MD"]:joined.includes("ofens")?["MOC"]:[];
  return ids.map(id=>F.find(s=>s.id===id&&cats.includes(s.cat))).find(Boolean)||null;
 }
 const ca=(p:P)=>p.ca??0, isXI=(p:P)=>p.status==="Onze inicial", loan=(p:P)=>/(emprest|loan)/i.test(p.status||""),sell=(p:P)=>/(vender|sell)/i.test(p.status||"");
 const eligible=(p:P)=>p.tipo!=="Comprar"&&p.tipo!=="Scouting"&&!/(vender|sell|emprest|loan|comprar|buy|vendido|scouting|observa|alvo|transfer)/i.test(p.status||"");
 const mapLine=(v:any):FormationMaps=>Object.fromEntries(Object.entries(v||{}).map(([formation,x])=>[formation,Object.fromEntries(Object.entries((x&&typeof x==="object"&&!Array.isArray(x))?x:{}).map(([slot,ids])=>[slot,Array.isArray(ids)?ids.filter(Boolean).map(String):ids?[String(ids)]:[]]))]));const mapRemoved=(v:any):Record<string,string[]>=>Object.fromEntries(Object.entries(v||{}).map(([formation,ids])=>[formation,Array.isArray(ids)?ids.filter(Boolean).map(String):[]]));
-function autoXI(pool:P[],slots:Slot[],prior:Maps={}){const m:Maps={},used=new Set<string>();const valid=new Set(pool.map(p=>p.id));slots.forEach(slot=>{const kept=(prior[slot.id]||[]).filter(id=>valid.has(id)&&!used.has(id));if(kept.length){m[slot.id]=kept;kept.forEach(id=>used.add(id));}});const compatible=(p:P,cat:Category)=>{const parts=positionParts(p.position),cats=parts.map(x=>category(x)),wide=parts.some(x=>/^(ml|me|mle|mr|md|mrd|mde|mdd|lw|rw|aml|amr|mal|mar|maml|mamr)$/.test(x));return cats.includes(cat)||(cat==="MC"&&cats.includes("MD"))||(cat==="MD"&&cats.includes("MC"))||(cat==="PLE"&&cats.includes("AD")&&wide)||(cat==="PLD"&&cats.includes("AE")&&wide);};const list=(slot:Slot)=>pool.filter(p=>!used.has(p.id)&&compatible(p,slot.cat)).sort((a,b)=>((prior[slot.id]||[]).includes(b.id)?1:0)-((prior[slot.id]||[]).includes(a.id)?1:0)+(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));slots.forEach(slot=>{if(m[slot.id]?.length)return;const candidates=list(slot);const p=candidates.find(x=>preferred(x,slots)?.id===slot.id)||candidates[0];if(p){m[slot.id]=[p.id];used.add(p.id);}});return m;}
+function autoXI(pool:P[],slots:Slot[],prior:Maps={}){const m:Maps={},used=new Set<string>();const valid=new Set(pool.map(p=>p.id));slots.forEach(slot=>{const kept=(prior[slot.id]||[]).filter(id=>valid.has(id)&&!used.has(id));if(kept.length){m[slot.id]=kept;kept.forEach(id=>used.add(id));}});const compatible=(p:P,cat:Category)=>{const cats=positionParts(p.position).map(category);return cats.includes(cat)||(cat==="MC"&&cats.includes("MD"))||(cat==="MD"&&cats.includes("MC"));};const list=(slot:Slot)=>pool.filter(p=>!used.has(p.id)&&compatible(p,slot.cat)).sort((a,b)=>((prior[slot.id]||[]).includes(b.id)?1:0)-((prior[slot.id]||[]).includes(a.id)?1:0)+(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));slots.forEach(slot=>{if(m[slot.id]?.length)return;const candidates=list(slot);const p=candidates.find(x=>preferred(x,slots)?.id===slot.id)||candidates[0];if(p){m[slot.id]=[p.id];used.add(p.id);}});return m;}
 const initials=(n:string)=>n.trim().split(/\s+/).slice(0,2).map(s=>s[0]||"").join("").toUpperCase();
 const statusClass=(s?:string)=>s==="Onze inicial"?"xi":s==="Rotação"?"rotation":s==="Suplente"?"sub":s==="Vender"?"sell":s==="Emprestar"||s==="Emprestado"?"loan":s==="Comprar"||s==="Alvo de transferência"?"buy":s==="Equipa B"?"b-team":s==="Sub-23"?"u23":s==="Sub-19"?"u19":s==="Observação"?"scouting":s==="Vendido"?"sold":"other";
 export default function Tactics({db,career,session,players,onStatusChange}:{db:any;career:any;session:any;players:P[];onStatusChange?:(id:string,status:string)=>void}){
