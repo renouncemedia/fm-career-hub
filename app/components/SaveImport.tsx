@@ -124,7 +124,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
       const careerPatch:any={updated_at:new Date().toISOString()};
       if(fields.includes("ca"))careerPatch.ca=p.ca;
       if(fields.includes("pa"))careerPatch.pa=p.pa;
-      if(fields.includes("caNovo")&&p.pa>minPAForCaNovo)careerPatch.ca_novo=p.ca;
+      if(fields.includes("caNovo")&&p.pa>=minPAForCaNovo)careerPatch.ca_novo=p.ca;
       if(fields.includes("age"))careerPatch.age=p.age;
       if(fields.includes("club"))careerPatch.club_name=p.club||null;
       if(fields.includes("positions"))careerPatch.position=p.positions.join(", ");
