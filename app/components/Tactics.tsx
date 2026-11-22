@@ -63,7 +63,27 @@ export default function Tactics({db,career,session,players,onStatusChange}:{db:a
  function move(id:string,slot:string,before?:string){const p=players.find(x=>x.id===id);if(!p)return;const isStarter=isXI(p);if(isStarter){setLineup(prev=>{const m={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));m[slot]=[...(m[slot]||[])];const at=before?m[slot].indexOf(before):-1;if(at>=0)m[slot].splice(at,0,id);else m[slot].push(id);return{...prev,[formation]:m};});setExtras(prev=>{const m={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));return{...prev,[formation]:m};});}else{setExtras(prev=>{const m={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));m[slot]=[...(m[slot]||[])];const at=before?m[slot].indexOf(before):-1;if(at>=0)m[slot].splice(at,0,id);else m[slot].push(id);return{...prev,[formation]:m};});setLineup(prev=>{const m={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));return{...prev,[formation]:m};});}setRemoved(prev=>{const m={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));return{...prev,[formation]:m};});setPick("");}
  function removePlayer(id:string){const p=players.find(x=>x.id===id);if(p&&isXI(p)&&p.linkId&&db){void db.from("career_players").update({squad_status:"Suplente",updated_at:new Date().toISOString()}).eq("id",p.linkId).then((r:any)=>{if(r.error)setError(r.error.message);else onStatusChange?.(p.id,"Suplente");});}setLineup(prev=>{const m={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));return{...prev,[formation]:m};});setExtras(prev=>{const m={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));return{...prev,[formation]:m};});setRemoved(prev=>({...prev,[formation]:[...(prev[formation]||[]),id]}));setPick("");}
  function autoFill(){const pool=visible.filter(eligible).sort((a,b)=>(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));const filled=autoXI(pool,slots,lineup[formation]||{});setLineup(prev=>({...prev,[formation]:filled}));syncXIStatuses(filled);setExtras(prev=>({...prev,[formation]:{}}));setRemoved(prev=>({...prev,[formation]:[]}));setNotice("Onze preenchido automaticamente.");}
- async function save(asNew=false){if(!db||!career||!session?.user)return;setBusy(true);setError("");const payload={owner_id:session.user.id,career_id:career.id,name:name.trim()||"Tática sem nome",formation,tactical_style:style,mentality,roles:{lineup,extras,removed,slots},instructions:{filters:{minCA,maxAge,hideLoaned,hideSell}},is_active:true,updated_at:new Date().toISOString()};const r=active&&!asNew?await db.from("tactics").update(payload).eq("id",active).select("id").single():await db.from("tactics").insert(payload).select("id").single();if(r.error){setError(r.error.message);setBusy(false);return;}const de=await db.from("tactics").update({is_active:false}).eq("career_id",career.id).neq("id",r.data.id);if(de.error){setError("Tática guardada, mas não foi possível ativá-la: "+de.error.message);setBusy(false);return;}setActive(r.data.id);setNotice("Tática guardada e ativa.");await load();setBusy(false);}
+ async function save(asNew=false){
+  if(!db||!career||!session?.user)return;
+  setBusy(true);setError("");setNotice("");
+  const previousActive=saved.find(t=>t.is_active)?.id||active||"";
+  const payload={owner_id:session.user.id,career_id:career.id,name:name.trim()||"Tática sem nome",formation,tactical_style:style,mentality,roles:{lineup,extras,removed,slots},instructions:{filters:{minCA,maxAge,hideLoaned,hideSell}},is_active:false,updated_at:new Date().toISOString()};
+  let targetId=active&&!asNew?active:"";let created=false;
+  try{
+   const r=targetId?await db.from("tactics").update(payload).eq("id",targetId).select("id").single():await db.from("tactics").insert(payload).select("id").single();
+   if(r.error)throw r.error;
+   targetId=r.data.id;created=!active||asNew;
+   const de=await db.from("tactics").update({is_active:false}).eq("career_id",career.id);
+   if(de.error)throw de.error;
+   const activate=await db.from("tactics").update({is_active:true,updated_at:new Date().toISOString()}).eq("id",targetId).eq("career_id",career.id).select("id").single();
+   if(activate.error)throw activate.error;
+   setActive(targetId);setNotice("Tática guardada e ativa.");await load();
+  }catch(e:any){
+   if(targetId){await db.from("tactics").update({is_active:false}).eq("id",targetId).eq("career_id",career.id);if(created)await db.from("tactics").delete().eq("id",targetId).eq("career_id",career.id);}
+   if(previousActive)await db.from("tactics").update({is_active:true}).eq("id",previousActive).eq("career_id",career.id);
+   setError("Não foi possível guardar/ativar a tática. "+(e?.message||"Erro desconhecido")+" A tática ativa anterior foi restaurada, se existia.");
+  }finally{setBusy(false);}
+ }
  async function removeTactic(){if(!db||!active||!confirm("Eliminar esta tática?"))return;const r=await db.from("tactics").delete().eq("id",active);if(r.error)setError(r.error.message);else{newTactic();await load();setNotice("Tática eliminada.");}}
  function place(id:string,slot:string,before?:string){move(id,slot,before);}
  function dropPlayer(e:DragEvent<HTMLDivElement>,slot:string,before?:string){e.preventDefault();const id=e.dataTransfer.getData("text/player");if(id)place(id,slot,before);}
