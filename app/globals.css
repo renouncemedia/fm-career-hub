@@ -131,3 +131,19 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 :root[data-theme="light"] .fm-header .tab.active{color:#fff}
 @media(max-width:900px){.fm-header{align-items:flex-start}.header-actions{width:100%}.fm-app .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.fm-header .header-titles p{display:none}.fm-app .app{padding-left:14px;padding-right:14px}.fm-app .content{padding-top:20px}.fm-app .stat-grid article{padding:13px}.fm-app .panel{padding:14px}.fm-app .panel-heading{align-items:flex-start;flex-direction:column}.fm-app .panel-actions{display:flex;flex-wrap:wrap}.fm-app .filters{flex-wrap:wrap}.fm-app .filters input,.fm-app .filters select{width:100%;min-width:0}.fm-app .table-wrap{overflow-x:auto}}
+
+
+/* Dashboard da carreira: blocos funcionais e navegação por contexto */
+.career-overview{display:grid;gap:16px}
+.overview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.overview-grid .panel{min-width:0}
+.overview-grid .panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.overview-grid .panel-heading h2{margin:0}
+.overview-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+.overview-list{display:grid;margin-top:12px}
+.overview-list-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:12px}
+.overview-list-row:last-child{border-bottom:0}
+.overview-list-row strong{font-weight:650;color:var(--text)}
+.overview-list-row span{color:var(--muted);text-align:right;font-size:11px}
+.overview-bottom{display:flex;align-items:center;justify-content:space-between;gap:16px}
+@media(max-width:760px){.overview-grid{grid-template-columns:1fr}.overview-bottom{align-items:flex-start;flex-direction:column}.overview-grid .panel-heading{align-items:flex-start;flex-direction:column}}
