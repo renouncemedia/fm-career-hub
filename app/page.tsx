@@ -11,7 +11,8 @@ type Draft=Omit<Player,"id"|"linkId">;
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL, key=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const db=url&&key?createClient(url,key):null;
 const TIPOS:[string,string][]=[["Plantel","Plantel atual"],["Futura","Entrada futura"],["Comprar","Alvo de compra"],["Scouting","Scouting"]];
-const statuses=["Plantel principal","Rotação","Onze inicial","Suplente","Emprestado","Equipa B","Sub-23","Sub-19","Observação","Alvo de transferência","Vender","Emprestar","Comprar","Vendido"];\nconst statusOptions=(current:string)=>Array.from(new Set([...statuses,current].filter(Boolean)));
+const statuses=["Plantel principal","Rotação","Onze inicial","Suplente","Emprestado","Equipa B","Sub-23","Sub-19","Observação","Alvo de transferência","Vender","Emprestar","Comprar","Vendido"];
+const statusOptions=(current:string)=>Array.from(new Set([...statuses,current].filter(Boolean)));
 const empty:Draft={name:"",nationality:"",position:"",ca:null,caNovo:null,tipo:"Plantel",pa:null,age:null,status:statuses[0],club:"",notes:"",tags:[]};
 const num=(v:unknown):number|null=>{const n=Number(String(v??"").replace(",",".").replace(/[^0-9.-]/g,""));return String(v??"").trim()!==""&&Number.isFinite(n)?n:null};
 function csvRows(s:string){
