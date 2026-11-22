@@ -13,19 +13,17 @@ const norm=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036
 const positionParts=(s:string)=>String(s||"").split(/[,;]/).map(norm).filter(Boolean);
 function category(pos:string):Category{
  const parts=positionParts(pos);const p=parts[0]||norm(pos);
- if(parts.some(x=>/^(gk|gr|goalkeeper|guardaredes)$/.test(x)))return"GR";
- if(parts.some(x=>/^(dce|cbl|leftcb|defesacentroesquerdo)$/.test(x)||x.includes("centroesquerdo")||x==="dce"))return"DCE";
- if(parts.some(x=>/^(dcd|cbr|rightcb|defesacentrodireito)$/.test(x)||x.includes("centrodireito")||x==="dcd"))return"DCD";
- if(parts.some(x=>/^(dc|cb|sw|defc|defcentral)$/.test(x)||x==="central"))return"DC";
- if(parts.some(x=>/^(de|dl|lb|lwb|leftback|defe|alae|wbl)$/.test(x)||x.includes("esquer")))return"PLE";
- if(parts.some(x=>/^(dd|dr|rb|rwb|rightback|defd|alad|wbr)$/.test(x)||x.includes("direit")))return"PLD";
- if(parts.some(x=>/^(md|mdc|mcd|dm|dmc|defmid|mdef|mdm)$/.test(x)||x.includes("defens")))return"MD";
- if(parts.some(x=>/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(x)||x.includes("ofensivocentro")||x==="moc"))return"MOC";
- if(parts.some(x=>/^(mod|amr|rw|mofd|avd|amrd|mar)$/.test(x)||x.includes("ofensivodireit")||x==="mod"))return"MOD";
- if(parts.some(x=>/^(moe|aml|lw|mofe|ave|amle|mal)$/.test(x)||x.includes("ofensivoesquer")||x==="moe"))return"MOE";
- if(parts.some(x=>/^(pld|st|cf|av|f9|af|att|striker|ponta)$/.test(x)||x.includes("pontadireit")||x==="pld"))return"PLD";
- if(parts.some(x=>/^(ple|pl|leftstriker|pontaesquerdo)$/.test(x)||x.includes("pontaesquer")||x==="ple"))return"PLE";
- if(parts.some(x=>/^(mc|cm|m|mid|me|ml|mr|mcm|mec)$/.test(x)||x.includes("mediocentro")||x==="mc"))return"MC";
+ if(parts.some(x=>/^(gk|gr|goalkeeper|guardaredes)$/.test(x)||x==="guardaredes"))return"GR";
+ if(parts.some(x=>/^(dce|cbl|leftcb)$/.test(x)||x.includes("defesacentroesquerdo")||x.includes("centroesquerdo")))return"DCE";
+ if(parts.some(x=>/^(dcd|cbr|rightcb)$/.test(x)||x.includes("defesacentrodireito")||x.includes("centrodireito")))return"DCD";
+ if(parts.some(x=>/^(dc|cb|sw|defc)$/.test(x)||x==="defesacentro"||x==="central"))return"DC";
+ if(parts.some(x=>/^(md|mdc|mcd|dm|dmc|defmid|mdef|mdm)$/.test(x)||x.includes("mediodefensivo")))return"MD";
+ if(parts.some(x=>/^(mc|cm|m|mid|ml|mr|mcm|mec)$/.test(x)||x.includes("mediocentro")||x==="mediocnetro"))return"MC";
+ if(parts.some(x=>/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(x)||x.includes("medioofensivocentro")))return"MOC";
+ if(parts.some(x=>/^(mod|amr|rw|mofd|avd|amrd|mar)$/.test(x)||x.includes("medioofensivodireito")))return"MOD";
+ if(parts.some(x=>/^(moe|aml|lw|mofe|ave|amle|mal)$/.test(x)||x.includes("medioofensivoesquerdo")))return"MOE";
+ if(parts.some(x=>/^(pld|st|cf|av|f9|af|att|striker)$/.test(x)||x.includes("pontadireito")))return"PLD";
+ if(parts.some(x=>/^(ple|leftstriker)$/.test(x)||x.includes("pontaesquerdo")))return"PLE";
  return"MC";
 }
 function preferred(p:P,F:Slot[]){
