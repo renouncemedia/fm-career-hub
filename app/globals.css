@@ -215,3 +215,14 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 @media(max-width:1100px){.fm-app .app{grid-template-columns:210px minmax(0,1fr);gap:18px}.fm-app .module-link{padding:9px 10px;font-size:11px}.fm-app .content{padding-top:20px}}
 @media(max-width:760px){.fm-app .app{display:block;padding:0 14px 28px}.fm-app .module-nav{position:static;min-height:0;display:flex;flex-direction:row;align-items:center;gap:5px;padding:10px 0 12px;margin:0 -2px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;overflow-x:auto;scrollbar-width:thin}.fm-app .nav-brand,.fm-app .nav-section-label{display:none}.fm-app .module-link{width:auto;flex:none;white-space:nowrap;padding:8px 11px}.fm-app .content{padding:20px 0}.fm-app .filters input{min-width:100%}.fm-app .filters select{flex:1;min-width:130px}.fm-app .panel-heading{align-items:flex-start}.fm-app .panel-actions{width:100%}.fm-app .panel-actions button{flex:1}.fm-app .table-wrap{border-radius:10px}}
 @media(max-width:480px){.fm-app .app{padding-left:10px;padding-right:10px}.fm-app .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fm-app .stat-grid article strong{font-size:25px}.fm-app .panel{padding:12px}.fm-app .panel-actions button{font-size:10px;padding:8px 10px}.fm-app .module-link{font-size:10.5px;padding:8px 9px}}
+
+/* Advanced squad filtering */
+.fm-app .advanced-filters{display:flex;align-items:end;gap:9px;flex-wrap:wrap;padding:12px 13px;margin:-3px 0 15px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.fm-app .advanced-filters label{display:flex;flex-direction:column;gap:5px;min-width:88px}
+.fm-app .advanced-filters label:first-child{min-width:150px}
+.fm-app .advanced-filters label span{font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.fm-app .advanced-filters input,.fm-app .advanced-filters select{width:100%;min-width:0;background:var(--surface-2);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:8px 9px;font-size:11px}
+.fm-app .clear-filters{margin-left:auto;padding:8px 11px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);font-size:11px;cursor:pointer}
+.fm-app .clear-filters:hover{color:var(--text);border-color:var(--accent)}
+@media(max-width:760px){.fm-app .advanced-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end}.fm-app .advanced-filters label:first-child{min-width:0}.fm-app .clear-filters{margin:0;min-height:35px}}
+@media(max-width:480px){.fm-app .advanced-filters{gap:8px;padding:10px}.fm-app .advanced-filters label span{font-size:8px}}
