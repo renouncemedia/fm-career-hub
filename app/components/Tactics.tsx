@@ -9,9 +9,37 @@ const formations:Record<string,Slot[]>={
 "4-2-3-1":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"AE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"AD",x:89,y:70},{id:"MD1",cat:"MD",x:36,y:54},{id:"MD2",cat:"MC",x:64,y:54},{id:"AE",cat:"AE",x:15,y:33},{id:"MOC",cat:"MOC",x:50,y:32},{id:"AD",cat:"AD",x:85,y:33},{id:"PL",cat:"PL",x:50,y:12}],
 "4-4-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"AE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"AD",x:89,y:70},{id:"AE",cat:"AE",x:10,y:46},{id:"MC1",cat:"MC",x:36,y:50},{id:"MC2",cat:"MC",x:64,y:50},{id:"AD",cat:"AD",x:90,y:46},{id:"PL1",cat:"PL",x:36,y:14},{id:"PL2",cat:"PL",x:64,y:14}]};
 const catNames:Record<string,string>={GR:"Guarda-redes",DC:"Defesas centrais",AE:"Ala esquerdo",AD:"Ala direito",MD:"Médio defensivo",MC:"Médio centro",MOC:"Médio ofensivo",PL:"Avançados"};
-const norm=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
-function category(pos:string){const p=norm(pos);if(/^(gk|gr|goalkeeper|guardaredes)$/.test(p))return"GR";if(/^(dc|dce|dcd|cb|cbl|cbr|sw|defc|defcentral)$/.test(p)||p.includes("central"))return"DC";if(/^(de|dl|lb|lwb|leftback|defe|alae|me|ml|mle|lw|aml|ae|mofe|ave|amle)$/.test(p)||p.includes("esquer"))return"AE";if(/^(dd|dr|rb|rwb|rightback|defd|alad|md|mr|mrd|rw|amr|ad|mofd|avd|amrd)$/.test(p)||p.includes("direit"))return"AD";if(/^(mdc|mcd|dm|dmc|defmid|mdef)$/.test(p)||p.includes("defens"))return"MD";if(/^(moc|amc|am|attmid|om|mo|mofc)$/.test(p)||p.includes("ofens"))return"MOC";if(/^(pl|st|cf|av|f9|af|att|ponta|avancado)$/.test(p)||p.includes("avanc")||p.includes("pont"))return"PL";if(/^(mc|cm|m|mid|me|md|ml|mr)$/.test(p)||p.includes("medio"))return"MC";return"MC";}
-function preferred(p:P,F:Slot[]){const raw=norm(p.position);const rightDef=/^(dd|dr|rb|rwb|defd|alad)$/.test(raw);const leftDef=/^(de|dl|lb|lwb|defe|alae)$/.test(raw);const rightWide=/^(md|mr|mrd|rw|amr|ad|mofd|avd|amrd)$/.test(raw)||raw.includes("direit");const leftWide=/^(me|ml|mle|lw|aml|ae|mofe|ave|amle)$/.test(raw)||raw.includes("esquer");const central=/^(dc|dce|dcd|cb|sw|defc)$/.test(raw)||raw.includes("central");const ids=rightDef?["DD","DC3","AD"]:leftDef?["DE","DC1","AE"]:rightWide?["AD","PL2","DD"]:leftWide?["AE","PL1","DE"]:central?["DC2","DC1","DC3"]:raw.includes("defens")?["MD"]:raw.includes("ofens")?["MOC"]:[];return ids.map(id=>F.find(s=>s.id===id&&s.cat===category(p.position))).find(Boolean)||null;}
+const norm=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]/g,"");
+const positionParts=(s:string)=>String(s||"").split(/[,;]/).map(norm).filter(Boolean);
+function category(pos:string){
+ const parts=positionParts(pos);const p=parts[0]||norm(pos);const joined=parts.join("|");
+ if(parts.some(x=>/^(gk|gr|goalkeeper|guardaredes)$/.test(x)))return"GR";
+ if(parts.some(x=>/^(dc|dce|dcd|cb|cbl|cbr|sw|defc|defcentral)$/.test(x)||x.includes("central")))return"DC";
+ if(parts.some(x=>/^(de|dl|lb|lwb|leftback|defe|alae|ml|me|mle|lw|aml|ae|mofe|ave|amle|mal|wbl)$/.test(x)||x.includes("esquer")))return"AE";
+ if(parts.some(x=>/^(dd|dr|rb|rwb|rightback|defd|alad|mr|md|mrd|rw|amr|ad|mofd|avd|amrd|mar|wbr)$/.test(x)||x.includes("direit")))return"AD";
+ if(parts.some(x=>/^(mdc|mcd|dm|dmc|defmid|mdef|mdm|mdefc)$/.test(x)||x.includes("defens")))return"MD";
+ if(parts.some(x=>/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(x)||x.includes("ofens")))return"MOC";
+ if(parts.some(x=>/^(pl|st|cf|av|f9|af|att|ponta|avancado|striker)$/.test(x)||x.includes("avanc")||x.includes("pont")))return"PL";
+ if(parts.some(x=>/^(mc|cm|m|mid|me|md|ml|mr|mcm|mec)$/.test(x)||x.includes("medio")))return"MC";
+ if(/^(gk|gr|goalkeeper|guardaredes)$/.test(p))return"GR";
+ if(/^(dc|dce|dcd|cb|cbl|cbr|sw|defc|defcentral)$/.test(p)||p.includes("central"))return"DC";
+ if(/^(de|dl|lb|lwb|leftback|defe|alae|ml|me|mle|lw|aml|ae|mofe|ave|amle|mal|wbl)$/.test(p)||p.includes("esquer"))return"AE";
+ if(/^(dd|dr|rb|rwb|rightback|defd|alad|mr|md|mrd|rw|amr|ad|mofd|avd|amrd|mar|wbr)$/.test(p)||p.includes("direit"))return"AD";
+ if(/^(mdc|mcd|dm|dmc|defmid|mdef|mdm|mdefc)$/.test(p)||p.includes("defens"))return"MD";
+ if(/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(p)||p.includes("ofens"))return"MOC";
+ if(/^(pl|st|cf|av|f9|af|att|ponta|avancado|striker)$/.test(p)||p.includes("avanc")||p.includes("pont"))return"PL";
+ return"MC";
+}
+function preferred(p:P,F:Slot[]){
+ const raw=positionParts(p.position);const joined=raw.join("|");
+ const rightDef=raw.some(x=>/^(dd|dr|rb|rwb|defd|alad|wbr)$/.test(x));
+ const leftDef=raw.some(x=>/^(de|dl|lb|lwb|defe|alae|wbl)$/.test(x));
+ const rightWide=raw.some(x=>/^(md|mr|mrd|rw|amr|ad|mofd|avd|amrd|mar)$/.test(x))||joined.includes("direit");
+ const leftWide=raw.some(x=>/^(me|ml|mle|lw|aml|ae|mofe|ave|amle|mal)$/.test(x))||joined.includes("esquer");
+ const central=raw.some(x=>/^(dc|dce|dcd|cb|sw|defc)$/.test(x))||joined.includes("central");
+ const ids=rightDef?["DD","DC3","AD"]:leftDef?["DE","DC1","AE"]:rightWide?["AD","PL2","DD"]:leftWide?["AE","PL1","DE"]:central?["DC2","DC1","DC3"]:joined.includes("defens")?["MD"]:joined.includes("ofens")?["MOC"]:[];
+ return ids.map(id=>F.find(s=>s.id===id&&s.cat===category(p.position))).find(Boolean)||null;
+}
 const ca=(p:P)=>p.ca??0, isXI=(p:P)=>p.status==="Onze inicial", loan=(p:P)=>/(emprest|loan)/i.test(p.status||""),sell=(p:P)=>/(vender|sell)/i.test(p.status||"");
 const eligible=(p:P)=>p.tipo!=="Comprar"&&p.tipo!=="Scouting"&&!/(vender|sell|emprest|loan|comprar|buy|vendido|scouting|observa|alvo|transfer)/i.test(p.status||"");
 const mapLine=(v:any):FormationMaps=>Object.fromEntries(Object.entries(v||{}).map(([formation,x])=>[formation,Object.fromEntries(Object.entries((x&&typeof x==="object"&&!Array.isArray(x))?x:{}).map(([slot,ids])=>[slot,Array.isArray(ids)?ids.filter(Boolean).map(String):ids?[String(ids)]:[]]))]));const mapRemoved=(v:any):Record<string,string[]>=>Object.fromEntries(Object.entries(v||{}).map(([formation,ids])=>[formation,Array.isArray(ids)?ids.filter(Boolean).map(String):[]]));
