@@ -1,49 +1,37 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 type P={id:string;linkId?:string;name:string;position:string;status?:string;age?:number;ca?:number;club?:string;tipo?:string};
-type Category="GR"|"DC"|"AE"|"MC"|"MD"|"AD"|"MOC"|"PL";type Slot={id:string;cat:Category;x:number;y:number};type Maps=Record<string,string[]>;type FormationMaps=Record<string,Maps>;
+type Category="GR"|"DC"|"DCE"|"DCD"|"MD"|"MC"|"MOC"|"MOD"|"MOE"|"PLD"|"PLE";type Slot={id:string;cat:Category;x:number;y:number};type Maps=Record<string,string[]>;type FormationMaps=Record<string,Maps>;
 const formations:Record<string,Slot[]>={
-"3-4-1-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DC1",cat:"DC",x:24,y:72},{id:"DC2",cat:"DC",x:50,y:75},{id:"DC3",cat:"DC",x:76,y:72},{id:"AE",cat:"AE",x:10,y:50},{id:"MC",cat:"MC",x:36,y:53},{id:"MD",cat:"MD",x:64,y:53},{id:"AD",cat:"AD",x:90,y:50},{id:"MOC",cat:"MOC",x:50,y:33},{id:"PL1",cat:"PL",x:34,y:13},{id:"PL2",cat:"PL",x:66,y:13}],
-"3-5-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DC1",cat:"DC",x:24,y:72},{id:"DC2",cat:"DC",x:50,y:75},{id:"DC3",cat:"DC",x:76,y:72},{id:"AE",cat:"AE",x:10,y:46},{id:"MC1",cat:"MC",x:34,y:51},{id:"MD",cat:"MD",x:50,y:62},{id:"MC2",cat:"MC",x:66,y:51},{id:"AD",cat:"AD",x:90,y:46},{id:"PL1",cat:"PL",x:34,y:14},{id:"PL2",cat:"PL",x:66,y:14}],
-"4-3-3":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"AE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"AD",x:89,y:70},{id:"MC1",cat:"MC",x:28,y:50},{id:"MD",cat:"MC",x:50,y:58},{id:"MC2",cat:"MC",x:72,y:50},{id:"AE",cat:"AE",x:17,y:19},{id:"PL",cat:"PL",x:50,y:13},{id:"AD",cat:"AD",x:83,y:19}],
-"4-2-3-1":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"AE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"AD",x:89,y:70},{id:"MD1",cat:"MD",x:36,y:54},{id:"MD2",cat:"MC",x:64,y:54},{id:"AE",cat:"AE",x:15,y:33},{id:"MOC",cat:"MOC",x:50,y:32},{id:"AD",cat:"AD",x:85,y:33},{id:"PL",cat:"PL",x:50,y:12}],
-"4-4-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"AE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"AD",x:89,y:70},{id:"AE",cat:"AE",x:10,y:46},{id:"MC1",cat:"MC",x:36,y:50},{id:"MC2",cat:"MC",x:64,y:50},{id:"AD",cat:"AD",x:90,y:46},{id:"PL1",cat:"PL",x:36,y:14},{id:"PL2",cat:"PL",x:64,y:14}]};
-const catNames:Record<Category,string>={GR:"Guarda-redes",DC:"Defesas centrais",AE:"Ala esquerdo",AD:"Ala direito",MD:"Médio defensivo",MC:"Médio centro",MOC:"Médio ofensivo",PL:"Avançados"};
+"3-4-1-2":[{id:"GR",cat:"GR",x:50,y:88},{id:"DCE",cat:"DCE",x:28,y:70},{id:"DC",cat:"DC",x:50,y:73},{id:"DCD",cat:"DCD",x:72,y:70},{id:"MOE",cat:"MOE",x:12,y:48},{id:"MC1",cat:"MC",x:37,y:52},{id:"MD",cat:"MD",x:63,y:52},{id:"MOD",cat:"MOD",x:88,y:48},{id:"MOC",cat:"MOC",x:50,y:32},{id:"PLE",cat:"PLE",x:35,y:13},{id:"PLD",cat:"PLD",x:65,y:13}],
+"3-5-2":[{id:"GR",cat:"GR",x:50,y:88},{id:"DCE",cat:"DCE",x:28,y:70},{id:"DC",cat:"DC",x:50,y:73},{id:"DCD",cat:"DCD",x:72,y:70},{id:"MOE",cat:"MOE",x:10,y:46},{id:"MC1",cat:"MC",x:30,y:50},{id:"MD",cat:"MD",x:50,y:61},{id:"MC2",cat:"MC",x:70,y:50},{id:"MOD",cat:"MOD",x:90,y:46},{id:"PLE",cat:"PLE",x:36,y:13},{id:"PLD",cat:"PLD",x:64,y:13}],
+"4-3-3":[{id:"GR",cat:"GR",x:50,y:88},{id:"MOE",cat:"MOE",x:10,y:70},{id:"DCE",cat:"DCE",x:34,y:73},{id:"DCD",cat:"DCD",x:66,y:73},{id:"MOD",cat:"MOD",x:90,y:70},{id:"MC1",cat:"MC",x:27,y:50},{id:"MD",cat:"MD",x:50,y:57},{id:"MC2",cat:"MC",x:73,y:50},{id:"PLE",cat:"PLE",x:17,y:18},{id:"DC",cat:"DC",x:50,y:12},{id:"PLD",cat:"PLD",x:83,y:18}],
+"4-2-3-1":[{id:"GR",cat:"GR",x:50,y:88},{id:"MOE",cat:"MOE",x:10,y:70},{id:"DCE",cat:"DCE",x:34,y:73},{id:"DCD",cat:"DCD",x:66,y:73},{id:"MOD",cat:"MOD",x:90,y:70},{id:"MD",cat:"MD",x:36,y:54},{id:"MC",cat:"MC",x:64,y:54},{id:"MOE",cat:"MOE",x:15,y:33},{id:"MOC",cat:"MOC",x:50,y:32},{id:"MOD",cat:"MOD",x:85,y:33},{id:"DC",cat:"DC",x:50,y:12}],
+"4-4-2":[{id:"GR",cat:"GR",x:50,y:88},{id:"MOE",cat:"MOE",x:10,y:70},{id:"DCE",cat:"DCE",x:34,y:73},{id:"DCD",cat:"DCD",x:66,y:73},{id:"MOD",cat:"MOD",x:90,y:70},{id:"MOE",cat:"MOE",x:10,y:46},{id:"MC1",cat:"MC",x:36,y:50},{id:"MC2",cat:"MC",x:64,y:50},{id:"MOD",cat:"MOD",x:90,y:46},{id:"PLE",cat:"PLE",x:36,y:14},{id:"PLD",cat:"PLD",x:64,y:14}]};
+const catNames:Record<Category,string>={GR:"Guarda Redes",DC:"Defesa Centro",DCE:"Defesa Centro Esquerdo",DCD:"Defesa Centro Direito",MD:"Médio Defensivo",MC:"Médio Centro",MOC:"Médio Ofensivo Centro",MOD:"Médio Ofensivo Direito",MOE:"Médio Ofensivo Esquerdo",PLD:"Ponta Direito",PLE:"Ponta Esquerdo"};
 const norm=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]/g,"");
 const positionParts=(s:string)=>String(s||"").split(/[,;]/).map(norm).filter(Boolean);
 function category(pos:string):Category{
- const parts=positionParts(pos);const p=parts[0]||norm(pos);
- if(parts.some(x=>/^(gk|gr|goalkeeper|guardaredes)$/.test(x)))return"GR";
- if(parts.some(x=>/^(dc|dce|dcd|cb|cbl|cbr|sw|defc|defcentral)$/.test(x)||x.includes("central")))return"DC";
- if(parts.some(x=>/^(de|dl|lb|lwb|leftback|defe|alae|ml|me|mle|lw|aml|ae|mofe|ave|amle|mal|wbl|maml|dwl|maml|dwl|dwbl|maml|dwl|dwbl|wbll)$/.test(x)||x.includes("esquer")))return"AE";
- if(parts.some(x=>/^(dd|dr|rb|rwb|rightback|defd|alad|mr|md|mrd|rw|amr|ad|mofd|avd|amrd|mar|wbr|mamr|dwr|mamr|dwr|dwbr|mamr|dwr|dwbr|dmr)$/.test(x)||x.includes("direit")))return"AD";
- if(parts.some(x=>/^(mdc|mcd|dm|dmc|defmid|mdef|mdm|mdefc|dmd|dmm)$/.test(x)||x.includes("defens")))return"MD";
- if(parts.some(x=>/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(x)||x.includes("ofens")))return"MOC";
- if(parts.some(x=>/^(pl|st|cf|av|f9|af|att|ponta|avancado|striker)$/.test(x)||x.includes("avanc")||x.includes("pont")))return"PL";
- if(parts.some(x=>/^(mc|cm|m|mid|me|md|ml|mr|mcm|mec)$/.test(x)||x.includes("medio")))return"MC";
- if(/^(gk|gr|goalkeeper|guardaredes)$/.test(p))return"GR";
- if(/^(dc|dce|dcd|cb|cbl|cbr|sw|defc|defcentral)$/.test(p)||p.includes("central"))return"DC";
- if(/^(de|dl|lb|lwb|leftback|defe|alae|ml|me|mle|lw|aml|ae|mofe|ave|amle|mal|wbl|maml|dwl|maml|dwl|dwbl|maml|dwl|dwbl|wbll)$/.test(p)||p.includes("esquer"))return"AE";
- if(/^(dd|dr|rb|rwb|rightback|defd|alad|mr|md|mrd|rw|amr|ad|mofd|avd|amrd|mar|wbr|mamr|dwr|mamr|dwr|dwbr|mamr|dwr|dwbr|dmr)$/.test(p)||p.includes("direit"))return"AD";
- if(/^(mdc|mcd|dm|dmc|defmid|mdef|mdm|mdefc|dmd|dmm)$/.test(p)||p.includes("defens"))return"MD";
- if(/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(p)||p.includes("ofens"))return"MOC";
- if(/^(pl|st|cf|av|f9|af|att|ponta|avancado|striker)$/.test(p)||p.includes("avanc")||p.includes("pont"))return"PL";
+ const p=norm(pos);if(["gk","gr","goalkeeper","guardaredes"].includes(p))return"GR";
+ if(["dce","cbl","leftcb","lcb"].includes(p)||p.includes("defesacentroesquer"))return"DCE";
+ if(["dcd","cbr","rightcb","rcb"].includes(p)||p.includes("defesacentrodireit"))return"DCD";
+ if(["dc","cb","sw","defc","defcentral"].includes(p)||p.includes("defesacentro")||p.includes("central"))return"DC";
+ if(["md","mdc","mcd","dm","dmc","defmid","mdef"].includes(p)||p.includes("defensiv"))return"MD";
+ if(["moc","amc","am","attmid","om","mo","mofc","mamc","mac"].includes(p)||p.includes("ofensivocentro"))return"MOC";
+ if(["mod","amr","rw","mofd","avd","mar","rightwing"].includes(p)||p.includes("ofensivodireit"))return"MOD";
+ if(["moe","aml","lw","mofe","ave","mal","leftwing"].includes(p)||p.includes("ofensivoesquer"))return"MOE";
+ if(["pld","st","cf","av","af","att","striker","ponta","avancado"].includes(p))return p==="pld"?"PLD":"PLE";
+ if(["mc","cm","m","mid","me","ml","mr","mcm","mec"].includes(p)||p.includes("mediocentro"))return"MC";
+ if(["de","dl","lb","lwb","leftback"].includes(p))return"MOE";
+ if(["dd","dr","rb","rwb","rightback"].includes(p))return"MOD";
+ if(p==="pl"||p==="st"||p==="cf")return"PLE";
  return"MC";
 }
-function preferred(p:P,F:Slot[]){
- const raw=positionParts(p.position);const cats=raw.map(x=>category(x));const joined=raw.join("|");
- const rightDef=raw.some(x=>/^(dd|dr|rb|rwb|defd|alad|wbr)$/.test(x));
- const leftDef=raw.some(x=>/^(de|dl|lb|lwb|defe|alae|wbl)$/.test(x));
- const rightWide=raw.some(x=>/^(md|mr|mrd|rw|amr|ad|mofd|avd|amrd|mar)$/.test(x))||joined.includes("direit");
- const leftWide=raw.some(x=>/^(me|ml|mle|lw|aml|ae|mofe|ave|amle|mal)$/.test(x))||joined.includes("esquer");
- const central=raw.some(x=>/^(dc|dce|dcd|cb|sw|defc)$/.test(x))||joined.includes("central");
- const ids=rightDef?["DD","DC3","AD"]:leftDef?["DE","DC1","AE"]:rightWide?["AD","PL2","DD"]:leftWide?["AE","PL1","DE"]:central?["DC2","DC1","DC3"]:joined.includes("defens")?["MD"]:joined.includes("ofens")?["MOC"]:[];
- return ids.map(id=>F.find(s=>s.id===id&&cats.includes(s.cat))).find(Boolean)||null;
-}
+function preferred(p:P,F:Slot[]){const c=category(p.position);return F.find(s=>s.cat===c)||F.find(s=>s.cat==="MC")||null;}
 const ca=(p:P)=>p.ca??0, isXI=(p:P)=>p.status==="Onze inicial", loan=(p:P)=>/(emprest|loan)/i.test(p.status||""),sell=(p:P)=>/(vender|sell)/i.test(p.status||"");
 const eligible=(p:P)=>p.tipo!=="Comprar"&&p.tipo!=="Scouting"&&!/(vender|sell|emprest|loan|comprar|buy|vendido|scouting|observa|alvo|transfer)/i.test(p.status||"");
 const mapLine=(v:any):FormationMaps=>Object.fromEntries(Object.entries(v||{}).map(([formation,x])=>[formation,Object.fromEntries(Object.entries((x&&typeof x==="object"&&!Array.isArray(x))?x:{}).map(([slot,ids])=>[slot,Array.isArray(ids)?ids.filter(Boolean).map(String):ids?[String(ids)]:[]]))]));const mapRemoved=(v:any):Record<string,string[]>=>Object.fromEntries(Object.entries(v||{}).map(([formation,ids])=>[formation,Array.isArray(ids)?ids.filter(Boolean).map(String):[]]));
-function autoXI(pool:P[],slots:Slot[],prior:Maps={}){const m:Maps={},used=new Set<string>();const valid=new Set(pool.map(p=>p.id));slots.forEach(slot=>{const kept=(prior[slot.id]||[]).filter(id=>valid.has(id)&&!used.has(id));if(kept.length){m[slot.id]=kept;kept.forEach(id=>used.add(id));}});const compatible=(p:P,cat:Category)=>{const parts=positionParts(p.position),cats=parts.map(x=>category(x)),wide=parts.some(x=>/^(ml|me|mle|mr|md|mrd|mde|mdd|lw|rw|aml|amr|mal|mar|maml|mamr)$/.test(x));return cats.includes(cat)||(cat==="MC"&&cats.includes("MD"))||(cat==="MD"&&cats.includes("MC"))||(cat==="AE"&&cats.includes("AD")&&wide)||(cat==="AD"&&cats.includes("AE")&&wide);};const list=(slot:Slot)=>pool.filter(p=>!used.has(p.id)&&compatible(p,slot.cat)).sort((a,b)=>((prior[slot.id]||[]).includes(b.id)?1:0)-((prior[slot.id]||[]).includes(a.id)?1:0)+(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));slots.forEach(slot=>{if(m[slot.id]?.length)return;const candidates=list(slot);const p=candidates.find(x=>preferred(x,slots)?.id===slot.id)||candidates[0];if(p){m[slot.id]=[p.id];used.add(p.id);}});return m;}
+function autoXI(pool:P[],slots:Slot[],prior:Maps={}){const m:Maps={},used=new Set<string>();const valid=new Set(pool.map(p=>p.id));slots.forEach(slot=>{const kept=(prior[slot.id]||[]).filter(id=>valid.has(id)&&!used.has(id));if(kept.length){m[slot.id]=kept;kept.forEach(id=>used.add(id));}});const compatible=(p:P,cat:Category)=>category(p.position)===cat||(cat==="DC"&&(category(p.position)==="DCE"||category(p.position)==="DCD"))||(cat==="MC"&&category(p.position)==="MD")||(cat==="MD"&&category(p.position)==="MC");const list=(slot:Slot)=>pool.filter(p=>!used.has(p.id)&&compatible(p,slot.cat)).sort((a,b)=>((prior[slot.id]||[]).includes(b.id)?1:0)-((prior[slot.id]||[]).includes(a.id)?1:0)+(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));slots.forEach(slot=>{if(m[slot.id]?.length)return;const candidates=list(slot);const p=candidates.find(x=>preferred(x,slots)?.id===slot.id)||candidates[0];if(p){m[slot.id]=[p.id];used.add(p.id);}});return m;}
 const initials=(n:string)=>n.trim().split(/\s+/).slice(0,2).map(s=>s[0]||"").join("").toUpperCase();
 const statusClass=(s?:string)=>s==="Onze inicial"?"xi":s==="Vender"?"sell":s==="Emprestar"||s==="Emprestado"?"loan":s==="Comprar"?"buy":s==="Equipa B"?"b-team":s==="Sub-23"?"u23":"other";
 export default function Tactics({db,career,session,players,onStatusChange}:{db:any;career:any;session:any;players:P[];onStatusChange?:(id:string,status:string)=>void}){
@@ -64,7 +52,7 @@ export default function Tactics({db,career,session,players,onStatusChange}:{db:a
   const failures=results.filter(x=>(x as any).error);if(failures.length){setError("Não foi possível sincronizar os estados: "+failures.map(x=>(x as any).error).join("; "));return false;}
   results.forEach(x=>{if((x as any).next)onStatusChange?.((x as any).p.id,(x as any).next);});return true;
  }
- function changeFormation(f:string){setFormation(f);setPick("");const existing=lineup[f]||{};const pool=players.filter(eligible).filter(p=>(!hideLoaned||!loan(p))&&(!hideSell||!sell(p))).sort((a,b)=>(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));const filled=autoXI(pool,formations[f],existing);setLineup(prev=>({...prev,[f]:filled}));void void syncXIStatuses(filled);setExtras(prev=>({...prev,[f]:{}}));setRemoved(prev=>({...prev,[f]:[]}));}
+ function changeFormation(f:string){setFormation(f);setPick("");const existing=lineup[f]||{};const pool=players.filter(eligible).filter(p=>(!hideLoaned||!loan(p))&&(!hideSell||!sell(p))).sort((a,b)=>(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));const filled=autoXI(pool,formations[f],existing);setLineup(prev=>({...prev,[f]:filled}));void syncXIStatuses(filled);setExtras(prev=>({...prev,[f]:{}}));setRemoved(prev=>({...prev,[f]:[]}));}
  function move(id:string,slot:string,before?:string){const p=players.find(x=>x.id===id);if(!p)return;const isStarter=isXI(p);if(isStarter){setLineup(prev=>{const m:Maps={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));m[slot]=[...(m[slot]||[])];const at=before?m[slot].indexOf(before):-1;if(at>=0)m[slot].splice(at,0,id);else m[slot].push(id);return{...prev,[formation]:m};});setExtras(prev=>{const m:Maps={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));return{...prev,[formation]:m};});}else{setExtras(prev=>{const m:Maps={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));m[slot]=[...(m[slot]||[])];const at=before?m[slot].indexOf(before):-1;if(at>=0)m[slot].splice(at,0,id);else m[slot].push(id);return{...prev,[formation]:m};});setLineup(prev=>{const m:Maps={...(prev[formation]||{})};Object.keys(m).forEach(k=>m[k]=(m[k]||[]).filter(v=>v!==id));return{...prev,[formation]:m};});}setRemoved(prev=>({...prev,[formation]:(prev[formation]||[]).filter(v=>v!==id)}));setPick("");}
  async function removePlayer(id:string){
   const p=players.find(x=>x.id===id);if(!p)return;
@@ -98,7 +86,7 @@ export default function Tactics({db,career,session,players,onStatusChange}:{db:a
  async function removeTactic(){if(!db||!active||!confirm("Eliminar esta tática?"))return;const r=await db.from("tactics").delete().eq("id",active);if(r.error)setError(r.error.message);else{newTactic();await load();setNotice("Tática eliminada.");}}
  function place(id:string,slot:string,before?:string){move(id,slot,before);}
  function dropPlayer(e:DragEvent<HTMLDivElement>,slot:string,before?:string){e.preventDefault();const id=e.dataTransfer.getData("text/player");if(id)place(id,slot,before);}
- const displayedExtras=useMemo(()=>{const m:Maps={...(extra||{})},used=new Set(Object.values(m).flat());const candidates=players.filter(p=>eligible(p)&&!isXI(p)&&!hidden.includes(p.id)&&visible.includes(p)&&!used.has(p.id)).sort((a,b)=>ca(b)-ca(a));candidates.forEach(p=>{const cat=category(p.position),target=slots.find(s=>s.cat===cat);if(target){m[target.id]=[...(m[target.id]||[]),p.id];used.add(p.id);}});return m;},[players,extra,hidden.join("|"),visible,slots]);
+ const displayedExtras=useMemo(()=>{const m:Maps={...(extra||{})},used=new Set(Object.values(m).flat());const candidates=players.filter(p=>eligible(p)&&!isXI(p)&&!hidden.includes(p.id)&&visible.includes(p)&&!used.has(p.id)).sort((a,b)=>ca(b)-ca(a));candidates.forEach(p=>{const cat=category(p.position),target=slots.find(s=>s.cat===cat)||slots.find(s=>s.cat==="MC");if(target){m[target.id]=[...(m[target.id]||[]),p.id];used.add(p.id);}});return m;},[players,extra,hidden.join("|"),visible,slots]);
 
  return <section className="panel tactics-panel"><div className="panel-heading"><div><p className="eyebrow">QUADRO TÁTICO</p><h2>Relvado Tático</h2><p className="module-description">Distribui o onze inicial, organiza as opções por posição e analisa a profundidade do plantel.</p></div><div className="tactic-actions"><button className="outline-btn" onClick={newTactic}>Nova</button><button className="primary-btn" disabled={busy} onClick={()=>save()}>{busy?"A guardar...":"Guardar"}</button><button className="outline-btn" disabled={!active||busy} onClick={()=>save(true)}>Guardar como</button><button className="outline-btn danger-btn" disabled={!active||busy} onClick={removeTactic}>Eliminar</button></div></div>{error&&<p className="alert error">{error}</p>}{notice&&<p className="alert success">{notice}</p>}
  <div className="tactic-toolbar"><label>Tática guardada<select value={active} onChange={e=>choose(e.target.value)}><option value="">Nova tática</option>{saved.map(t=><option key={t.id} value={t.id}>{t.name} · {t.formation}</option>)}</select></label><label>Nome<input value={name} onChange={e=>setName(e.target.value)}/></label><label>Estilo<select value={style} onChange={e=>setStyle(e.target.value)}>{["Posse de bola","Contra-ataque","Gegenpress","Transições rápidas","Jogo pelas alas","Defensivo","Equilibrado"].map(x=><option key={x}>{x}</option>)}</select></label><label>Mentalidade<select value={mentality} onChange={e=>setMentality(e.target.value)}>{["Muito defensiva","Defensiva","Cautelosa","Equilibrada","Positiva","Ofensiva","Muito ofensiva"].map(x=><option key={x}>{x}</option>)}</select></label></div>
