@@ -24,7 +24,8 @@ export default function SaveImport({db,career,session,onDone}:Props){
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  const [done,setDone]=useState("");
- const [fields,setFields]=useState<string[]>(["name","birthDate","nationality","positions","ca","pa","age","club"]);\n const [minPAForCaNovo,setMinPAForCaNovo]=useState(150);
+ const [fields,setFields]=useState<string[]>(["name","birthDate","nationality","positions","ca","pa","age","club"]);
+ const [minPAForCaNovo,setMinPAForCaNovo]=useState(150);
  const importFields=[["name","Nome"],["birthDate","Data de nascimento"],["nationality","Nacionalidade"],["positions","Posição"],["ca","CA"],["pa","PA / CA potencial"],["caNovo","CA Novo"],["age","Idade"],["club","Clube"]];
  const counts=useMemo(()=>preview?{total:preview.save.players.length,existing:preview.existing,fresh:preview.fresh,ambiguous:preview.ambiguous,unmatched:preview.unmatched,squad:preview.squad,otherClubs:preview.otherClubs,noClub:preview.noClub}:null,[preview]);
  async function inspect(file?:File){
