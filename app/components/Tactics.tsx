@@ -31,19 +31,19 @@ function category(pos:string){
  return"MC";
 }
 function preferred(p:P,F:Slot[]){
- const raw=positionParts(p.position);const joined=raw.join("|");
+ const raw=positionParts(p.position);const cats=raw.map(x=>category(x));const joined=raw.join("|");
  const rightDef=raw.some(x=>/^(dd|dr|rb|rwb|defd|alad|wbr)$/.test(x));
  const leftDef=raw.some(x=>/^(de|dl|lb|lwb|defe|alae|wbl)$/.test(x));
  const rightWide=raw.some(x=>/^(md|mr|mrd|rw|amr|ad|mofd|avd|amrd|mar)$/.test(x))||joined.includes("direit");
  const leftWide=raw.some(x=>/^(me|ml|mle|lw|aml|ae|mofe|ave|amle|mal)$/.test(x))||joined.includes("esquer");
  const central=raw.some(x=>/^(dc|dce|dcd|cb|sw|defc)$/.test(x))||joined.includes("central");
  const ids=rightDef?["DD","DC3","AD"]:leftDef?["DE","DC1","AE"]:rightWide?["AD","PL2","DD"]:leftWide?["AE","PL1","DE"]:central?["DC2","DC1","DC3"]:joined.includes("defens")?["MD"]:joined.includes("ofens")?["MOC"]:[];
- return ids.map(id=>F.find(s=>s.id===id&&s.cat===category(p.position))).find(Boolean)||null;
+ return ids.map(id=>F.find(s=>s.id===id&&cats.includes(s.cat))).find(Boolean)||null;
 }
 const ca=(p:P)=>p.ca??0, isXI=(p:P)=>p.status==="Onze inicial", loan=(p:P)=>/(emprest|loan)/i.test(p.status||""),sell=(p:P)=>/(vender|sell)/i.test(p.status||"");
 const eligible=(p:P)=>p.tipo!=="Comprar"&&p.tipo!=="Scouting"&&!/(vender|sell|emprest|loan|comprar|buy|vendido|scouting|observa|alvo|transfer)/i.test(p.status||"");
 const mapLine=(v:any):FormationMaps=>Object.fromEntries(Object.entries(v||{}).map(([formation,x])=>[formation,Object.fromEntries(Object.entries((x&&typeof x==="object"&&!Array.isArray(x))?x:{}).map(([slot,ids])=>[slot,Array.isArray(ids)?ids.filter(Boolean).map(String):ids?[String(ids)]:[]]))]));const mapRemoved=(v:any):Record<string,string[]>=>Object.fromEntries(Object.entries(v||{}).map(([formation,ids])=>[formation,Array.isArray(ids)?ids.filter(Boolean).map(String):[]]));
-function autoXI(pool:P[],slots:Slot[],prior:Maps={}){const m:Maps={},used=new Set<string>();const valid=new Set(pool.map(p=>p.id));slots.forEach(slot=>{const kept=(prior[slot.id]||[]).filter(id=>valid.has(id)&&!used.has(id));if(kept.length){m[slot.id]=kept;kept.forEach(id=>used.add(id));}});const compatible=(p:P,cat:string)=>{const c=category(p.position),parts=positionParts(p.position),wide=parts.some(x=>/^(ml|me|mle|mr|md|mrd|mde|mdd|lw|rw|aml|amr|mal|mar|maml|mamr)$/.test(x));return c===cat||(cat==="MC"&&c==="MD")||(cat==="MD"&&c==="MC")||(cat==="AE"&&c==="AD"&&wide)||(cat==="AD"&&c==="AE"&&wide);};const list=(slot:Slot)=>pool.filter(p=>!used.has(p.id)&&compatible(p,slot.cat)).sort((a,b)=>((prior[slot.id]||[]).includes(b.id)?1:0)-((prior[slot.id]||[]).includes(a.id)?1:0)+(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));slots.forEach(slot=>{if(m[slot.id]?.length)return;const candidates=list(slot);const p=candidates.find(x=>preferred(x,slots)?.id===slot.id)||candidates[0];if(p){m[slot.id]=[p.id];used.add(p.id);}});return m;}
+function autoXI(pool:P[],slots:Slot[],prior:Maps={}){const m:Maps={},used=new Set<string>();const valid=new Set(pool.map(p=>p.id));slots.forEach(slot=>{const kept=(prior[slot.id]||[]).filter(id=>valid.has(id)&&!used.has(id));if(kept.length){m[slot.id]=kept;kept.forEach(id=>used.add(id));}});const compatible=(p:P,cat:string)=>{const parts=positionParts(p.position),cats=parts.map(x=>category(x)),wide=parts.some(x=>/^(ml|me|mle|mr|md|mrd|mde|mdd|lw|rw|aml|amr|mal|mar|maml|mamr)$/.test(x));return cats.includes(cat)||(cat==="MC"&&cats.includes("MD"))||(cat==="MD"&&cats.includes("MC"))||(cat==="AE"&&cats.includes("AD")&&wide)||(cat==="AD"&&cats.includes("AE")&&wide);};const list=(slot:Slot)=>pool.filter(p=>!used.has(p.id)&&compatible(p,slot.cat)).sort((a,b)=>((prior[slot.id]||[]).includes(b.id)?1:0)-((prior[slot.id]||[]).includes(a.id)?1:0)+(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));slots.forEach(slot=>{if(m[slot.id]?.length)return;const candidates=list(slot);const p=candidates.find(x=>preferred(x,slots)?.id===slot.id)||candidates[0];if(p){m[slot.id]=[p.id];used.add(p.id);}});return m;}
 const initials=(n:string)=>n.trim().split(/\s+/).slice(0,2).map(s=>s[0]||"").join("").toUpperCase();
 const statusClass=(s?:string)=>s==="Onze inicial"?"xi":s==="Vender"?"sell":s==="Emprestar"||s==="Emprestado"?"loan":s==="Comprar"?"buy":s==="Equipa B"?"b-team":s==="Sub-23"?"u23":"other";
 export default function Tactics({db,career,session,players,onStatusChange}:{db:any;career:any;session:any;players:P[];onStatusChange?:(id:string,status:string)=>void}){
