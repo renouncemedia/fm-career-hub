@@ -19,8 +19,8 @@ function category(pos:string):Category{
  if(["dc","cb","sw","defc","defcentral"].includes(p)||p.includes("defesacentro")||p.includes("central"))return"DC";
  if(["md","mdc","mcd","dm","dmc","defmid","mdef"].includes(p)||p.includes("defensiv"))return"MD";
  if(["moc","amc","am","attmid","om","mo","mofc","mamc","mac"].includes(p)||p.includes("ofensivocentro"))return"MOC";
- if(["mod","amr","rw","mofd","avd","mar","rightwing","pontadireito"].includes(p)||p.includes("ofensivodireit"))return"MOD";
- if(["moe","aml","lw","mofe","ave","mal","leftwing","pontaesquerdo"].includes(p)||p.includes("ofensivoesquer"))return"MOE";
+ if(["pld"].includes(p)||p.startsWith("pontadireito"))return"PLD";\n if(["mod","amr","rw","mofd","avd","mar","rightwing"].includes(p)||p.includes("ofensivodireit"))return"MOD";
+ if(["ple"].includes(p)||p.startsWith("pontaesquerdo"))return"PLE";\n if(["moe","aml","lw","mofe","ave","mal","leftwing"].includes(p)||p.includes("ofensivoesquer"))return"MOE";
  if(["pld","ponta-direito"].includes(p))return"PLD";
  if(["ple","ponta-esquerdo"].includes(p))return"PLE";
  if(["pl","st","cf","av","af","att","ponta","avancado","striker"].includes(p))return"PLE";
