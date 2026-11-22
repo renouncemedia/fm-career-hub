@@ -441,3 +441,21 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 .fm-app .tactics-panel .depth-ok{font-size:10px;color:var(--accent);margin:5px 0}
 @media(max-width:900px){.fm-app .tactics-panel .tactic-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.fm-app .tactics-panel .pitch-stats{margin-left:0;width:100%}.fm-app .tactics-panel .depth-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.fm-app .tactics-panel .tactic-toolbar{grid-template-columns:1fr}.fm-app .tactics-panel .pitch-controls{gap:8px}.fm-app .tactics-panel .fm-pitch{min-height:1500px}.fm-app .tactics-panel .pitch-slot{width:clamp(96px,28%,128px)}.fm-app .tactics-panel .pitch-player{padding-left:27px}.fm-app .tactics-panel .pitch-player-avatar{width:17px;height:17px;left:5px;font-size:7px}.fm-app .tactics-panel .pitch-player b{font-size:9px}.fm-app .tactics-panel .pitch-player small,.fm-app .tactics-panel .pitch-player em{font-size:7px}}
+
+/* Relvado tático: formação inteira visível sem scroll interno */
+.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{aspect-ratio:unset!important;height:min(72vh,760px)!important;min-height:600px!important;max-height:760px!important;overflow:hidden!important;width:100%!important;max-width:1240px!important;margin:0 auto!important}
+.fm-app .tactics-panel .pitch-slot{width:clamp(86px,12%,132px)!important;max-width:132px!important;gap:3px!important}
+.fm-app .tactics-panel .pitch-slot-label{height:20px;font-size:9px;padding:0 5px}
+.fm-app .tactics-panel .pitch-slot-players{overflow:visible!important;max-height:none!important;gap:3px!important}
+.fm-app .tactics-panel .pitch-player{padding:5px 5px 5px 25px!important;border-width:1px!important;gap:1px!important;min-height:36px}
+.fm-app .tactics-panel .pitch-player b{font-size:9px!important}
+.fm-app .tactics-panel .pitch-player small,.fm-app .tactics-panel .pitch-player em{font-size:7px!important}
+.fm-app .tactics-panel .pitch-player-avatar{width:16px!important;height:16px!important;left:4px!important;top:5px!important;font-size:7px!important}
+.fm-app .tactics-panel .pitch-player.xi{background:#123e2b!important;border-color:#22c55e!important;color:#eafff2!important}
+.fm-app .tactics-panel .pitch-player.sell{background:#4b2713!important;border-color:#f59e0b!important;color:#fff7e6!important}
+.fm-app .tactics-panel .pitch-player.loan{background:#153b60!important;border-color:#60a5fa!important;color:#eff8ff!important}
+.fm-app .tactics-panel .pitch-player.buy{background:#35205a!important;border-color:#a78bfa!important;color:#f7f0ff!important}
+.fm-app .tactics-panel .pitch-player.b-team{background:#3b3b3b!important;border-color:#94a3b8!important;color:#f1f5f9!important}
+.fm-app .tactics-panel .pitch-player.u23{background:#5b321b!important;border-color:#fb923c!important;color:#fff7ed!important}
+.fm-app .tactics-panel .pitch-player.other{background:#263746!important;border-color:#64748b!important;color:#f1f5f9!important}
+@media(max-width:760px){.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{height:620px!important;min-height:620px!important;max-height:620px!important}.fm-app .tactics-panel .pitch-slot{width:clamp(74px,17%,100px)!important}.fm-app .tactics-panel .pitch-player{padding-left:22px!important}.fm-app .tactics-panel .pitch-player b{font-size:8px!important}}
