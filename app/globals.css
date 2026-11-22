@@ -73,3 +73,61 @@ footer span{color:#22c55e}
 .auth-card .brand{margin-bottom:28px}
 @media(max-width:1100px){.sidebar{width:210px}.content{padding-left:25px;padding-right:25px}}
 @media(max-width:760px){.app-shell{display:block}.sidebar{width:100%;height:auto;padding:12px 14px;border-right:0;border-bottom:1px solid var(--glass-border);display:flex;flex-direction:row;align-items:center;gap:8px;overflow-x:auto}.sidebar .brand{margin:0 14px 0 0;flex:none}.sidebar .side-label{display:none}.nav-item{width:auto;flex:none;margin:0;padding:9px 11px}.nav-item span{white-space:nowrap}.nav-item b,.sidebar-foot{display:none}.main-area{width:100%}.topbar{height:auto;min-height:60px;gap:10px;flex-wrap:wrap;padding:12px 18px}.content{padding:30px 16px}.stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.stat-grid article{padding:15px}.stat-grid strong{font-size:29px}.panel{padding:16px}.panel-heading{align-items:flex-start;flex-direction:column}.panel-actions{flex-wrap:wrap}.filters{flex-wrap:wrap}.filters input{min-width:100%}.filters select{width:100%}.table-wrap{margin:0 -8px;overflow-x:auto}.table-foot{gap:8px;flex-wrap:wrap}}
+
+
+/* Estrutura do HTML original — FM Career Hub */
+:root{--bg:#040b07;--panel:#0d1812;--line:rgba(220,245,230,.1);--text:#f5f5f7;--muted:rgba(235,235,245,.62);--lime:#22c47e;--cyan:#22c47e;--accent:#22c47e;--surface:#0d1812;--surface-2:#17281f}
+:root[data-theme="light"]{--bg:#f0f6f2;--panel:#fff;--line:rgba(60,60,67,.13);--text:#1d1d1f;--muted:rgba(60,60,67,.68);--lime:#00804a;--cyan:#00804a;--accent:#00804a;--surface:#fff;--surface-2:#eaf2ed;color-scheme:light}
+html,body{min-height:100%;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),transparent 60%),var(--bg);color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+.fm-app{min-height:100vh;background:transparent}
+.fm-app .topbar{position:sticky;top:0;z-index:40;height:auto;min-height:0;padding:0;background:color-mix(in srgb,var(--bg) 86%,transparent);border:0;border-bottom:1px solid var(--line);backdrop-filter:saturate(180%) blur(18px)}
+.fm-app .topbar:after{content:"";display:block;height:2px;background:repeating-linear-gradient(90deg,#00804a 0 36px,#fff 36px 72px);opacity:.9}
+.fm-header{max-width:1320px;margin:0 auto;padding:12px clamp(16px,3vw,40px);display:flex;align-items:center;justify-content:space-between;gap:14px 22px;flex-wrap:wrap}
+.fm-header .brand{display:flex;align-items:center;gap:14px;margin:0;letter-spacing:0}
+.fm-header .brand-mark{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:#00804a;color:#fff;font-size:13px;font-weight:800;box-shadow:0 0 0 1px #ffffff30 inset,0 6px 18px #00a35c55}
+.fm-header .header-titles h1{font-size:19px;line-height:1.2;font-weight:800;letter-spacing:-.025em;margin:2px 0}
+.fm-header .header-titles p{font-size:12px;color:var(--muted);font-weight:400;letter-spacing:0}
+.brand-eyebrow{display:block;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.header-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.fm-header .tabs{display:flex;gap:2px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.fm-header .tab{border:0;border-radius:9px;padding:8px 15px;background:transparent;color:var(--muted);font:600 12.5px Inter,sans-serif;cursor:pointer}
+.fm-header .tab.active{background:#00804a;color:#fff;box-shadow:0 2px 10px #00a35c55}
+.fm-header .theme-toggle{border:1px solid var(--line);border-radius:11px;padding:9px 13px;background:var(--surface);color:var(--text);font:600 12px Inter,sans-serif}
+.fm-app .app{max-width:1320px;margin:0 auto;padding:0 clamp(16px,3vw,40px) 48px}
+.module-nav{display:flex;align-items:center;gap:5px;overflow-x:auto;padding:14px 0 12px;border-bottom:1px solid var(--line);scrollbar-width:thin}
+.module-link{flex:none;display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--muted);font:600 11.5px Inter,sans-serif;white-space:nowrap;cursor:pointer}
+.module-link:hover{background:var(--surface);color:var(--text)}
+.module-link.active{background:rgba(0,128,74,.15);border-color:rgba(34,196,126,.24);color:var(--accent)}
+.module-link small{font-size:10px;color:inherit}
+.fm-app .content{max-width:none;padding:25px 0 28px}
+.fm-app .content>.eyebrow{font-size:10px;letter-spacing:.15em;color:var(--accent)}
+.fm-app .content>h1{font-size:clamp(30px,4vw,46px);font-weight:650;letter-spacing:-.045em;line-height:1.06;margin:8px 0 9px}
+.fm-app .content>h1 span{color:var(--accent)}
+.fm-app .intro{font-size:13px;color:var(--muted)}
+.fm-app .stat-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;margin:22px 0 18px;border:1px solid var(--line);border-radius:17px;background:var(--line);overflow:hidden}
+.fm-app .stat-grid article{position:relative;display:flex;flex-direction:column;gap:4px;padding:15px 18px;border:0;border-radius:0;background:var(--surface);box-shadow:none}
+.fm-app .stat-grid article:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.85}
+.fm-app .stat-grid article span{font-size:10px;letter-spacing:.09em;font-weight:700;color:var(--muted)}
+.fm-app .stat-grid article strong{font-size:29px;letter-spacing:-.04em;font-weight:700;color:var(--text)}
+.fm-app .stat-grid article small{font-size:11px;color:var(--muted)}
+.fm-app .panel{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 1px 0 rgba(255,255,255,.035) inset}
+.fm-app .panel-heading h2{font-size:21px;font-weight:700;letter-spacing:-.025em}
+.fm-app .panel-heading .eyebrow{color:var(--accent)}
+.fm-app .primary-btn{background:#00804a;border:1px solid #00804a;color:white;border-radius:980px;padding:10px 17px;font-size:12px;font-weight:650}
+.fm-app .outline-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--text);border-radius:980px;padding:9px 15px;font-size:12px}
+.fm-app .filters input,.fm-app .filters select{background:var(--surface);border:1px solid var(--line);border-radius:11px;color:var(--text)}
+.fm-app table{min-width:900px}
+.fm-app th{background:var(--surface);color:var(--muted);font-size:11px;font-weight:600;letter-spacing:.04em}
+.fm-app td{border-bottom:1px solid var(--line);color:var(--text);font-size:12px}
+.fm-app tbody tr:hover{background:rgba(0,128,74,.06)}
+.fm-app .avatar{background:rgba(0,128,74,.15);color:var(--accent);border:1px solid rgba(34,196,126,.2)}
+.fm-app .rating{color:var(--accent)}
+.fm-app .status-tag{background:rgba(0,128,74,.14);border:1px solid rgba(34,196,126,.2);color:var(--accent);border-radius:980px;padding:4px 9px}
+.fm-app footer{border-color:var(--line);color:var(--muted)}
+.fm-app footer span{color:var(--accent)}
+:root[data-theme="light"] body{background:radial-gradient(1000px 380px at 12% -8%,rgba(0,128,74,.09),transparent 60%),var(--bg)}
+:root[data-theme="light"] .fm-app .topbar{background:rgba(240,246,242,.88)}
+:root[data-theme="light"] .fm-header .tab.active{color:#fff}
+@media(max-width:900px){.fm-header{align-items:flex-start}.header-actions{width:100%}.fm-app .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.fm-header .header-titles p{display:none}.fm-app .app{padding-left:14px;padding-right:14px}.fm-app .content{padding-top:20px}.fm-app .stat-grid article{padding:13px}.fm-app .panel{padding:14px}.fm-app .panel-heading{align-items:flex-start;flex-direction:column}.fm-app .panel-actions{display:flex;flex-wrap:wrap}.fm-app .filters{flex-wrap:wrap}.fm-app .filters input,.fm-app .filters select{width:100%;min-width:0}.fm-app .table-wrap{overflow-x:auto}}
