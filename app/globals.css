@@ -363,3 +363,15 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 .fm-app .ca-novo-threshold{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px}
 .fm-app .ca-novo-threshold input{width:90px}
 @media(max-width:760px){.fm-app .tactics-panel .tactic-toolbar{grid-template-columns:1fr 1fr}.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{max-height:none!important}}
+
+
+/* Tactics workspace: match the original HTML tactical pitch container */
+.fm-app .tactics-panel .pitch-controls,
+.fm-app .tactics-panel .module-description,
+.fm-app .tactics-panel .tactics-layout.tactics-full,
+.fm-app .tactics-panel .depth-bottom{max-width:1240px;margin-left:auto;margin-right:auto}
+.fm-app .tactics-panel .tactics-layout.tactics-full{width:100%!important}
+.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{width:100%!important;max-width:1240px!important;aspect-ratio:68/92!important;min-height:1500px!important;height:auto!important;max-height:none!important;margin:0 auto!important;border-radius:var(--r-lg)!important}
+.fm-app .tactics-panel .pitch-controls{width:100%}
+.fm-app .tactics-panel .depth-bottom{width:100%}
+@media(max-width:760px){.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{min-height:1500px!important;max-height:none!important}}
