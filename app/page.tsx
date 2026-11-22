@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ChangeEvent } from "react";
 import { createClient } from "@supabase/supabase-js";
 import Records from "./components/Records";
-import Tactics from "./components/Tactics";\nimport Analysis from "./components/Analysis";
+import Tactics from "./components/Tactics";
+import Analysis from "./components/Analysis";
 import SaveImport from "./components/SaveImport";
 import CareerOverview from "./components/CareerOverview";
 
