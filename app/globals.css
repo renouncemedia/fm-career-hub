@@ -183,3 +183,35 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 .fm-app .pc-nums b{font-size:20px;font-weight:700}
 .fm-app .pc-note{font-size:12px;color:var(--muted);margin:0}
 .fm-app .pc-act{margin-top:auto;display:flex;gap:6px}
+
+/* Redesign progress — workspace navigation + responsive dashboard */
+.fm-app .app{display:grid;grid-template-columns:248px minmax(0,1fr);max-width:1600px;margin:0 auto;padding:0 clamp(14px,2.2vw,32px) 36px;gap:clamp(18px,2.5vw,36px);align-items:start}
+.fm-app .module-nav{position:sticky;top:92px;display:flex;flex-direction:column;align-items:stretch;gap:4px;overflow:visible;padding:20px 12px 18px;border:1px solid var(--line);border-radius:18px;background:var(--surface);min-height:calc(100vh - 120px)}
+.fm-app .nav-brand{display:flex;align-items:center;gap:11px;padding:2px 8px 18px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.fm-app .nav-brand .brand-mark{width:34px;height:34px;border-radius:9px;font-size:11px}
+.fm-app .nav-brand strong{display:block;font-size:11px;letter-spacing:.1em}
+.fm-app .nav-brand small{display:block;color:var(--muted);font-size:10px;margin-top:3px}
+.fm-app .nav-section-label{padding:8px 10px 5px;color:var(--muted);font-size:9px;font-weight:750;letter-spacing:.14em}
+.fm-app .module-link{width:100%;justify-content:flex-start;padding:10px 12px;border-radius:10px;font-size:12px}
+.fm-app .module-link .nav-dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55;flex:none}
+.fm-app .module-link.active .nav-dot{opacity:1;box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent)}
+.fm-app .module-link small{margin-left:auto;border-radius:7px;background:var(--surface-2);padding:2px 7px;font-size:10px}
+.fm-app .content{padding:25px 0 28px;min-width:0}
+.fm-app .content>.eyebrow{margin-top:3px}
+.fm-app .stat-grid article{transition:background .18s,transform .18s}
+.fm-app .panel{border-radius:17px}
+.fm-app .panel-heading{gap:16px}
+.fm-app .panel-actions{display:flex;gap:8px;flex-wrap:wrap}
+.fm-app .filters{display:flex;align-items:center;gap:9px}
+.fm-app .filters input{flex:1;min-width:220px}
+.fm-app .filters select{min-width:150px}
+.fm-app .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px}
+.fm-app table{min-width:980px}
+.fm-app th:first-child,.fm-app td:first-child{padding-left:16px}
+.fm-app tbody tr{transition:background .14s}
+.fm-app .pcard{transition:transform .15s,border-color .15s}
+.fm-app .pcard:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.fm-app .module-link:focus-visible,.fm-app button:focus-visible,.fm-app input:focus-visible,.fm-app select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:1100px){.fm-app .app{grid-template-columns:210px minmax(0,1fr);gap:18px}.fm-app .module-link{padding:9px 10px;font-size:11px}.fm-app .content{padding-top:20px}}
+@media(max-width:760px){.fm-app .app{display:block;padding:0 14px 28px}.fm-app .module-nav{position:static;min-height:0;display:flex;flex-direction:row;align-items:center;gap:5px;padding:10px 0 12px;margin:0 -2px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;overflow-x:auto;scrollbar-width:thin}.fm-app .nav-brand,.fm-app .nav-section-label{display:none}.fm-app .module-link{width:auto;flex:none;white-space:nowrap;padding:8px 11px}.fm-app .content{padding:20px 0}.fm-app .filters input{min-width:100%}.fm-app .filters select{flex:1;min-width:130px}.fm-app .panel-heading{align-items:flex-start}.fm-app .panel-actions{width:100%}.fm-app .panel-actions button{flex:1}.fm-app .table-wrap{border-radius:10px}}
+@media(max-width:480px){.fm-app .app{padding-left:10px;padding-right:10px}.fm-app .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fm-app .stat-grid article strong{font-size:25px}.fm-app .panel{padding:12px}.fm-app .panel-actions button{font-size:10px;padding:8px 10px}.fm-app .module-link{font-size:10.5px;padding:8px 9px}}
