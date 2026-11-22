@@ -14,8 +14,8 @@ const positionParts=(s:string)=>String(s||"").split(/[,;|/]/).map(norm).filter(B
 function category(pos:string):Category{
  const parts=positionParts(pos);
  if(parts.some(x=>/^(gk|gr|goalkeeper|guardaredes)$/.test(x)))return"GR";
- if(parts.some(x=>/^(dce|cbl|leftcb|dlc|dcl|leftcenterback)$/.test(x)||x.includes("defesacentroesquerdo")||x.includes("centroesquerdo")))return"DCE";
- if(parts.some(x=>/^(dcd|cbr|rightcb|drc|dcr|rightcenterback)$/.test(x)||x.includes("defesacentrodireito")||x.includes("centrodireito")))return"DCD";
+ if(parts.some(x=>/^(dce|cbl|leftcb|dlc|dcl|leftcenterback|de|dl|lb|lwb|wbl)$/.test(x)||x.includes("defesacentroesquerdo")||x.includes("centroesquerdo")))return"DCE";
+ if(parts.some(x=>/^(dcd|cbr|rightcb|drc|dcr|rightcenterback|dd|dr|rb|rwb|wbr)$/.test(x)||x.includes("defesacentrodireito")||x.includes("centrodireito")))return"DCD";
  if(parts.some(x=>/^(dc|cb|sw|defc|centraldefender)$/.test(x)||x==="defesacentro"||x==="central"))return"DC";
  if(parts.some(x=>/^(md|mdc|mcd|dm|dmc|defmid|mdef|mdm)$/.test(x)||x.includes("mediodefensivo")))return"MD";
  if(parts.some(x=>/^(mc|cm|m|mid|mcm|mec|mcl|mcr|centralmid)$/.test(x)||x.includes("mediocentro")))return"MC";
