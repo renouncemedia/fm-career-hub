@@ -292,27 +292,26 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 .slot-add{border:1px dashed #ffffffb0;border-radius:4px;background:#123a26aa;color:#fff;font-size:9px;padding:2px 5px;white-space:nowrap;cursor:pointer}
 
 
-/* Desktop: spacious workspace with an overlay module launcher */
+/* Desktop: grouped top navigation and full-width workspace */
 @media(min-width:761px){
  .fm-app>.topbar{display:none!important}
  .fm-app .app{display:block!important;max-width:none!important;width:100%!important;margin:0!important;padding:0 clamp(20px,2.6vw,42px) 24px!important}
  .fm-app .module-nav{display:none!important}
- .fm-app .content{position:relative;padding:22px 0 24px!important;max-width:none!important;width:100%!important}
+ .fm-app .content{position:relative;padding:0 0 24px!important;max-width:none!important;width:100%!important}
+ .fm-app .desktop-group-nav{display:flex;align-items:center;justify-content:space-between;gap:14px;position:sticky;top:0;z-index:60;padding:10px 0;margin:0 0 18px;border-bottom:1px solid var(--line);background:var(--bg)}
+ .fm-app .desktop-nav-groups{display:flex;align-items:center;gap:3px}
+ .fm-app .desktop-nav-group{position:relative}
+ .fm-app .desktop-nav-group-button{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--text);font:inherit;font-size:12px;font-weight:650;cursor:pointer}
+ .fm-app .desktop-nav-group-button span{font-size:10px;color:var(--muted)}
+ .fm-app .desktop-nav-group-button:hover,.fm-app .desktop-nav-group-button.active{background:var(--surface);border-color:var(--line)}
+ .fm-app .desktop-nav-dropdown{position:absolute;top:calc(100% + 6px);left:0;min-width:190px;padding:6px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 12px 35px #0003}
+ .fm-app .desktop-nav-dropdown button{display:block;width:100%;text-align:left;padding:9px 10px;border:0;border-radius:7px;background:transparent;color:var(--text);font:inherit;font-size:12px;cursor:pointer}
+ .fm-app .desktop-nav-dropdown button:hover,.fm-app .desktop-nav-dropdown button.selected{background:var(--surface-2);color:var(--accent)}
+ .fm-app .desktop-nav-actions{display:flex;align-items:center;gap:6px}
+ .fm-app .desktop-nav-actions .theme-toggle{padding:7px 10px;font-size:11px}
  .fm-app .content>.eyebrow{margin:4px 0 6px!important;font-size:9px}
  .fm-app .content>h1{font-size:clamp(25px,2.3vw,36px)!important;margin:0 0 5px!important}
  .fm-app .content>.intro{font-size:12px!important;margin:0 0 18px!important}
- .fm-app .desktop-module-launcher{position:absolute;top:22px;right:0;z-index:50}
- .fm-app .module-launch-button{display:flex;align-items:center;gap:9px;padding:9px 13px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);font:inherit;font-size:12px;font-weight:650;cursor:pointer;box-shadow:0 2px 8px #0000000a}
- .fm-app .module-launch-button:hover{border-color:var(--accent)}
- .fm-app .module-launch-chevron{color:var(--muted)}
- .fm-app .module-launch-menu{position:absolute;top:calc(100% + 8px);right:0;width:min(440px,calc(100vw - 32px));padding:14px;border:1px solid var(--line);border-radius:15px;background:var(--surface);box-shadow:0 14px 40px #0003}
- .fm-app .module-menu-heading{font-size:9px;font-weight:750;letter-spacing:.14em;color:var(--muted);margin:2px 4px 10px}
- .fm-app .module-menu-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
- .fm-app .module-menu-grid button,.fm-app .module-menu-actions button{padding:9px 8px;border:0;border-radius:8px;background:transparent;color:var(--text);font:inherit;font-size:11px;text-align:left;cursor:pointer}
- .fm-app .module-menu-grid button:hover,.fm-app .module-menu-actions button:hover{background:var(--surface-2)}
- .fm-app .module-menu-grid button.selected{background:color-mix(in srgb,var(--accent) 13%,var(--surface));color:var(--accent);font-weight:700}
- .fm-app .module-menu-actions{display:flex;gap:5px;border-top:1px solid var(--line);padding-top:9px;margin-top:10px}
- .fm-app .module-menu-actions button{font-size:10px}
  .fm-app .stat-grid{gap:12px}
 }
-@media(max-width:760px){.fm-app .desktop-module-launcher{display:none}}
+@media(max-width:760px){.fm-app .desktop-group-nav{display:none}}
