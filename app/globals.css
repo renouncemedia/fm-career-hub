@@ -249,3 +249,19 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 .fm-app .tactics-panel .danger-btn{color:var(--danger)}
 @media(max-width:900px){.fm-app .tactics-layout,.fm-app .tactics-bottom{grid-template-columns:1fr}.fm-app .tactic-actions{justify-content:flex-start}}
 @media(max-width:520px){.fm-app .tactic-actions{width:100%}.fm-app .tactic-actions button{flex:1}.fm-app .tactic-toolbar{grid-template-columns:1fr 1fr}.fm-app .tactic-slot{min-width:55px}.fm-app .slot-player{min-width:58px}.fm-app .slot-player select{max-width:80px;font-size:8px}.fm-app .slot-label{font-size:8px}}
+
+/* Visible one-click formation chooser */
+.fm-app .formation-picker{margin:14px 0 18px;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--surface)}
+.fm-app .formation-picker-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.fm-app .formation-picker-head h3{margin:3px 0 0;font-size:16px}
+.fm-app .formation-current{font-size:12px;color:var(--muted)}.fm-app .formation-current b{color:var(--accent)}
+.fm-app .formation-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+.fm-app .formation-card{min-width:0;text-align:left;cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface-2);color:var(--text);transition:border-color .15s,background .15s,transform .15s}
+.fm-app .formation-card:hover{border-color:var(--accent);transform:translateY(-1px)}.fm-app .formation-card.selected{border:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 15%,transparent)}
+.fm-app .formation-card strong{display:block;font-size:16px;margin-bottom:4px}.fm-app .formation-card span{display:block;min-height:28px;font-size:9px;line-height:1.4;color:var(--muted)}
+.fm-app .formation-mini{height:42px;margin-top:7px;border-radius:5px;background:linear-gradient(180deg,#24563b,#1d4933);border:1px solid #548565;position:relative;overflow:hidden}
+.fm-app .formation-mini:before,.fm-app .formation-mini:after{content:"";position:absolute;left:0;right:0;border-top:1px solid #ffffff55}.fm-app .formation-mini:before{top:50%}.fm-app .formation-mini:after{top:0;height:9px;border:1px solid #ffffff44;border-top:0;left:25%;right:25%}
+.fm-app .formation-mini i{position:absolute;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px #173b2d;top:25%;left:18%}.fm-app .formation-mini i:nth-child(2){left:36%;top:35%}.fm-app .formation-mini i:nth-child(3){left:54%;top:35%}.fm-app .formation-mini i:nth-child(4){left:72%;top:25%}.fm-app .formation-mini i:nth-child(5){left:48%;top:75%}
+.fm-app .formation-help{font-size:11px;color:var(--muted);margin:10px 0 0}
+@media(max-width:900px){.fm-app .formation-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){.fm-app .formation-picker{padding:10px}.fm-app .formation-picker-head{align-items:flex-start;flex-direction:column}.fm-app .formation-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.fm-app .formation-card{padding:8px}.fm-app .formation-card strong{font-size:15px}}
