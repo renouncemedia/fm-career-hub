@@ -334,3 +334,15 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 .fm-app .slot-add{border:1px dashed #ffffffb0!important;border-radius:4px!important;background:#123a26aa!important;color:#fff!important;font-size:9px!important;padding:2px 5px!important;white-space:nowrap;cursor:pointer}
 .fm-app .pitch-slot.drag-over{filter:brightness(1.15)}
 @media(max-width:850px){.fm-app .fm-pitch{max-width:100%!important}.fm-app .pitch-slot{width:29%!important}.fm-app .pitch-player b{font-size:9px}.fm-app .pitch-controls{gap:8px}.fm-app .pitch-stats{margin-left:0;width:100%}}
+
+/* Tactical layout requested: no XI sidebar, full-width pitch and compact controls */
+.fm-app .tactics-panel .panel-heading{margin-bottom:12px}
+.fm-app .tactic-toolbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+.fm-app .tactic-toolbar label{font-size:10px;display:flex;flex-direction:column;gap:4px}
+.fm-app .tactic-toolbar input,.fm-app .tactic-toolbar select{min-width:0;width:100%;padding:7px 9px;font-size:11px}
+.fm-app .pitch-controls{padding:8px 0;gap:10px;font-size:11px}
+.fm-app .tactics-layout.tactics-full{display:block!important;width:100%!important}
+.fm-app .tactics-layout.tactics-full .fm-pitch{width:100%!important;max-width:none!important;aspect-ratio:68/92!important;max-height:calc(100vh - 220px)!important}
+.fm-app .depth-bottom{margin-top:20px;width:100%}
+.fm-app .depth-bottom .depth-row{grid-template-columns:1fr 34px minmax(90px,140px)}
+@media(max-width:760px){.fm-app .tactic-toolbar{grid-template-columns:1fr 1fr}.fm-app .tactics-layout.tactics-full .fm-pitch{max-height:none!important}}
