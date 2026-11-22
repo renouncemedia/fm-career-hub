@@ -77,6 +77,23 @@ export default function SaveImport({db,career,session,onDone}:Props){
     const k=normalise(p.full_name||"");if(k){const a=byName.get(k)||[];a.push(p);byName.set(k,a);}
    }
    const linkByPlayer=new Map((links||[]).map((x:any)=>[x.player_id,x.id]));
+   let importedSeasonId:string|null=null;
+   if(preview.save.gameDate){
+    const gameDate=new Date(preview.save.gameDate);
+    if(Number.isFinite(gameDate.getTime())){
+     const year=gameDate.getUTCFullYear(),month=gameDate.getUTCMonth()+1;
+     const seasonStart=month>=7?year:year-1;
+     const seasonLabel=String(seasonStart)+"/"+String(seasonStart+1).slice(-2);
+     const found=await db.from("seasons").select("id").eq("career_id",career.id).eq("label",seasonLabel).maybeSingle();
+     if(found.error)throw found.error;
+     if(found.data)importedSeasonId=found.data.id;
+     else{
+      const createdSeason=await db.from("seasons").insert({owner_id:session.user.id,career_id:career.id,label:seasonLabel,start_date:String(seasonStart)+"-07-01",end_date:String(seasonStart+1)+"-06-30",is_current:false,notes:"Criada automaticamente a partir da data do save FM24."}).select("id").single();
+      if(createdSeason.error)throw createdSeason.error;
+      importedSeasonId=createdSeason.data.id;
+     }
+    }
+   }
    const seen=new Set<string>();
    const squadPlayers=preview.save.players.filter(p=>sameClub(p.club,String(career.club_name||"")));
    if(!squadPlayers.length){const detected=[...new Set(preview.save.players.map(p=>p.club).filter(Boolean))].slice(0,20).join(", ");throw new Error("Não encontrei correspondência para o clube da carreira ("+(career.club_name||"não definido")+"). Clubes detetados no save: "+(detected||"nenhum identificado")+". Nenhum jogador foi importado.");}
@@ -118,7 +135,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
      const l=await db.from("career_players").insert({owner_id:session.user.id,career_id:career.id,player_id:playerId,squad_status:"Plantel principal",club_name:p.club||null,position:p.positions.join(", "),ca:p.ca,pa:p.pa,age:p.age});
      if(l.error)throw l.error;created++;
     }
-    const snap=await db.from("player_attribute_snapshots").insert({owner_id:session.user.id,career_id:career.id,player_id:playerId,ca:p.ca,pa:p.pa,attributes:{...p.attributes,positionRatings:p.positionRatings,rawAttributes:p.rawAttributes,gameDate:preview.save.gameDate,formatVersion:preview.save.formatVersion},source:"Save FM24"});
+    const snap=await db.from("player_attribute_snapshots").insert({owner_id:session.user.id,career_id:career.id,player_id:playerId,season_id:importedSeasonId,ca:p.ca,pa:p.pa,attributes:{...p.attributes,positionRatings:p.positionRatings,rawAttributes:p.rawAttributes,gameDate:preview.save.gameDate,formatVersion:preview.save.formatVersion},source:"Save FM24"});
     if(snap.error)throw snap.error;
     if(i%10===0){setProgress(Math.round((i+1)/squadPlayers.length*100));setMessage("A guardar jogadores e snapshots...");}
    }
