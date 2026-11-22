@@ -86,7 +86,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
      const seasonLabel=String(seasonStart)+"/"+String(seasonStart+1).slice(-2);
      const found=await db.from("seasons").select("id,is_current").eq("career_id",career.id).eq("label",seasonLabel).maybeSingle();
      if(found.error)throw found.error;
-     const current=await db.from("seasons").select("id").eq("career_id",career.id).eq("is_current",true).maybeSingle();
+     const current=await db.from("seasons").select("id").eq("career_id",career.id).eq("is_current",true).limit(1).maybeSingle();
      if(current.error)throw current.error;
      if(found.data){
       importedSeasonId=found.data.id;
