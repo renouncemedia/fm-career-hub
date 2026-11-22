@@ -6,7 +6,15 @@ type Props = { db:any; career:any; session:any; onDone:()=>Promise<void> };
 type Preview = { save:FM24Save; fileName:string; existing:number; fresh:number; ambiguous:number; unmatched:number; squad:number; otherClubs:number; noClub:number };
 const normalise=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
 const uniqueByName=(players:FM24Player[])=>{const m=new Map<string,number>();for(const p of players){const k=normalise(p.fullName||p.name);m.set(k,(m.get(k)||0)+1);}return m;};
-const sameClub=(playerClub:string|null|undefined,careerClub:string|null|undefined)=>!!normalise(playerClub||"")&&!!normalise(careerClub||"")&&normalise(playerClub!)===normalise(careerClub!);
+const clubKey=(value:string|null|undefined)=>{
+ const key=normalise(value||"");
+ const aliases:Record<string,string>={"sportingcp":"sporting","sportingclubedeportugal":"sporting","sportingclubedeportugalfutebol":"sporting"};
+ return aliases[key]||key;
+};
+const sameClub=(playerClub:string|null|undefined,careerClub:string|null|undefined)=>{
+ const player=clubKey(playerClub),career=clubKey(careerClub);
+ return !!player&&!!career&&player===career;
+};
 
 export default function SaveImport({db,career,session,onDone}:Props){
  const input=useRef<HTMLInputElement>(null);
@@ -69,7 +77,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
    const linkByPlayer=new Map((links||[]).map((x:any)=>[x.player_id,x.id]));
    const seen=new Set<string>();
    const squadPlayers=preview.save.players.filter(p=>sameClub(p.club,String(career.club_name||"")));
-   if(!squadPlayers.length)throw new Error("Não encontrei jogadores cujo clube corresponda exatamente ao clube da carreira ("+(career.club_name||"não definido")+"). Nenhum jogador foi importado.");
+   if(!squadPlayers.length){const detected=[...new Set(preview.save.players.map(p=>p.club).filter(Boolean))].slice(0,20).join(", ");throw new Error("Não encontrei correspondência para o clube da carreira ("+(career.club_name||"não definido")+"). Clubes detetados no save: "+(detected||"nenhum identificado")+". Nenhum jogador foi importado.");}
    for(let i=0;i<squadPlayers.length;i++){
     const p=squadPlayers[i],key=normalise(p.fullName||p.name);
     if(seen.has(String(p.id))){skipped++;continue;}seen.add(String(p.id));
