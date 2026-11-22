@@ -5,33 +5,35 @@ type Category="GR"|"DC"|"DCE"|"DCD"|"MD"|"MC"|"MOC"|"MOD"|"MOE"|"PLD"|"PLE";type
 const formations:Record<string,Slot[]>={
 "3-4-1-2":[{id:"GR",cat:"GR",x:50,y:88},{id:"DCE",cat:"DCE",x:28,y:70},{id:"DC",cat:"DC",x:50,y:73},{id:"DCD",cat:"DCD",x:72,y:70},{id:"MOE",cat:"MOE",x:12,y:48},{id:"MC1",cat:"MC",x:37,y:52},{id:"MD",cat:"MD",x:63,y:52},{id:"MOD",cat:"MOD",x:88,y:48},{id:"MOC",cat:"MOC",x:50,y:32},{id:"PLE",cat:"PLE",x:35,y:13},{id:"PLD",cat:"PLD",x:65,y:13}],
 "3-5-2":[{id:"GR",cat:"GR",x:50,y:88},{id:"DCE",cat:"DCE",x:28,y:70},{id:"DC",cat:"DC",x:50,y:73},{id:"DCD",cat:"DCD",x:72,y:70},{id:"MOE2",cat:"MOE",x:10,y:46},{id:"MC1",cat:"MC",x:30,y:50},{id:"MD",cat:"MD",x:50,y:61},{id:"MC2",cat:"MC",x:70,y:50},{id:"MOD2",cat:"MOD",x:90,y:46},{id:"PLE",cat:"PLE",x:36,y:13},{id:"PLD",cat:"PLD",x:64,y:13}],
-"4-3-3":[{id:"GR",cat:"GR",x:50,y:88},{id:"MOE",cat:"MOE",x:10,y:70},{id:"DCE",cat:"DCE",x:34,y:73},{id:"DCD",cat:"DCD",x:66,y:73},{id:"MOD",cat:"MOD",x:90,y:70},{id:"MC1",cat:"MC",x:27,y:50},{id:"MD",cat:"MD",x:50,y:57},{id:"MC2",cat:"MC",x:73,y:50},{id:"PLE",cat:"PLE",x:17,y:18},{id:"DC",cat:"DC",x:50,y:12},{id:"PLD",cat:"PLD",x:83,y:18}],
+"4-3-3":[{id:"GR",cat:"GR",x:50,y:88},{id:"MOE",cat:"MOE",x:10,y:70},{id:"DCE",cat:"DCE",x:34,y:73},{id:"DCD",cat:"DCD",x:66,y:73},{id:"MOD",cat:"MOD",x:90,y:70},{id:"MC1",cat:"MC",x:27,y:50},{id:"MD",cat:"MD",x:50,y:57},{id:"MC2",cat:"MC",x:73,y:50},{id:"MOE",cat:"MOE",x:17,y:18},{id:"MOC",cat:"MOC",x:50,y:12},{id:"MOD",cat:"MOD",x:83,y:18}],
 "4-2-3-1":[{id:"GR",cat:"GR",x:50,y:88},{id:"MOE",cat:"MOE",x:10,y:70},{id:"DCE",cat:"DCE",x:34,y:73},{id:"DCD",cat:"DCD",x:66,y:73},{id:"MOD",cat:"MOD",x:90,y:70},{id:"MD",cat:"MD",x:36,y:54},{id:"MC",cat:"MC",x:64,y:54},{id:"MOE1",cat:"MOE",x:15,y:33},{id:"MOC",cat:"MOC",x:50,y:32},{id:"MOD1",cat:"MOD",x:85,y:33},{id:"DC",cat:"DC",x:50,y:12}],
 "4-4-2":[{id:"GR",cat:"GR",x:50,y:88},{id:"MOE",cat:"MOE",x:10,y:70},{id:"DCE",cat:"DCE",x:34,y:73},{id:"DCD",cat:"DCD",x:66,y:73},{id:"MOD",cat:"MOD",x:90,y:70},{id:"MOE",cat:"MOE",x:10,y:46},{id:"MC1",cat:"MC",x:36,y:50},{id:"MC2",cat:"MC",x:64,y:50},{id:"MOD",cat:"MOD",x:90,y:46},{id:"PLE",cat:"PLE",x:36,y:14},{id:"PLD",cat:"PLD",x:64,y:14}]};
 const catNames:Record<Category,string>={GR:"Guarda Redes",DC:"Defesa Centro",DCE:"Defesa Centro Esquerdo",DCD:"Defesa Centro Direito",MD:"Médio Defensivo",MC:"Médio Centro",MOC:"Médio Ofensivo Centro",MOD:"Médio Ofensivo Direito",MOE:"Médio Ofensivo Esquerdo",PLD:"Ponta Direito",PLE:"Ponta Esquerdo"};
 const norm=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
 const positionParts=(s:string)=>String(s||"").split(/[,;]/).map(norm).filter(Boolean);
 function category(pos:string):Category{
- const p=norm(pos);if(["gk","gr","goalkeeper","guardaredes"].includes(p))return"GR";
- if(["dce","cbl","leftcb","lcb"].includes(p)||p.includes("defesacentroesquer"))return"DCE";
- if(["dcd","cbr","rightcb","rcb"].includes(p)||p.includes("defesacentrodireit"))return"DCD";
+ const tokens=String(pos||"").split(/[,;]/).map(norm).filter(Boolean),p=tokens[0]||norm(pos);
+ if(["gk","gr","goalkeeper","guardaredes"].includes(p))return"GR";
+ if(["dce","cbl","leftcb","lcb"].includes(p)||p.includes("defesacentroesquer")||(p.includes("central")&&p.includes("esquer")))return"DCE";
+ if(["dcd","cbr","rightcb","rcb"].includes(p)||p.includes("defesacentrodireit")||(p.includes("central")&&p.includes("direit")))return"DCD";
  if(["dc","cb","sw","defc","defcentral"].includes(p)||p.includes("defesacentro")||p.includes("central"))return"DC";
  if(["md","mdc","mcd","dm","dmc","defmid","mdef"].includes(p)||p.includes("defensiv"))return"MD";
  if(["moc","amc","am","attmid","om","mo","mofc","mamc","mac"].includes(p)||p.includes("ofensivocentro"))return"MOC";
- if(["mod","amr","rw","mofd","avd","mar","rightwing"].includes(p)||p.includes("ofensivodireit"))return"MOD";
- if(["moe","aml","lw","mofe","ave","mal","leftwing"].includes(p)||p.includes("ofensivoesquer"))return"MOE";
- if(["pld","st","cf","av","af","att","striker","ponta","avancado"].includes(p))return p==="pld"?"PLD":"PLE";
- if(["mc","cm","m","mid","me","ml","mr","mcm","mec"].includes(p)||p.includes("mediocentro"))return"MC";
+ if(["mod","amr","rw","mofd","avd","mar","rightwing","pontadireito"].includes(p)||p.includes("ofensivodireit"))return"MOD";
+ if(["moe","aml","lw","mofe","ave","mal","leftwing","pontaesquerdo"].includes(p)||p.includes("ofensivoesquer"))return"MOE";
+ if(["pld","ponta-direito"].includes(p))return"PLD";
+ if(["ple","ponta-esquerdo"].includes(p))return"PLE";
+ if(["pl","st","cf","av","af","att","ponta","avancado","striker"].includes(p))return"PLE";
+ if(["mc","cm","m","mid","me","ml","mr","mcm","mec"].includes(p)||p.includes("mediocentro")||p.includes("mediocentral"))return"MC";
  if(["de","dl","lb","lwb","leftback"].includes(p))return"MOE";
  if(["dd","dr","rb","rwb","rightback"].includes(p))return"MOD";
- if(p==="pl"||p==="st"||p==="cf")return"PLE";
  return"MC";
 }
 function preferred(p:P,F:Slot[]){const c=category(p.position);return F.find(s=>s.cat===c)||F.find(s=>s.cat==="MC")||null;}
 const ca=(p:P)=>p.ca??0, isXI=(p:P)=>p.status==="Onze inicial", loan=(p:P)=>/(emprest|loan)/i.test(p.status||""),sell=(p:P)=>/(vender|sell)/i.test(p.status||"");
 const eligible=(p:P)=>p.tipo!=="Comprar"&&p.tipo!=="Scouting"&&!/(vender|sell|emprest|loan|comprar|buy|vendido|scouting|observa|alvo|transfer)/i.test(p.status||"");
 const mapLine=(v:any):FormationMaps=>Object.fromEntries(Object.entries(v||{}).map(([formation,x])=>[formation,Object.fromEntries(Object.entries((x&&typeof x==="object"&&!Array.isArray(x))?x:{}).map(([slot,ids])=>[slot,Array.isArray(ids)?ids.filter(Boolean).map(String):ids?[String(ids)]:[]]))]));const mapRemoved=(v:any):Record<string,string[]>=>Object.fromEntries(Object.entries(v||{}).map(([formation,ids])=>[formation,Array.isArray(ids)?ids.filter(Boolean).map(String):[]]));
-function autoXI(pool:P[],slots:Slot[],prior:Maps={}){const m:Maps={},used=new Set<string>();const valid=new Set(pool.map(p=>p.id));slots.forEach(slot=>{const kept=(prior[slot.id]||[]).filter(id=>valid.has(id)&&!used.has(id));if(kept.length){m[slot.id]=kept;kept.forEach(id=>used.add(id));}});const compatible=(p:P,cat:Category)=>category(p.position)===cat||(cat==="DC"&&(category(p.position)==="DCE"||category(p.position)==="DCD"))||(cat==="MC"&&category(p.position)==="MD")||(cat==="MD"&&category(p.position)==="MC");const list=(slot:Slot)=>pool.filter(p=>!used.has(p.id)&&compatible(p,slot.cat)).sort((a,b)=>((prior[slot.id]||[]).includes(b.id)?1:0)-((prior[slot.id]||[]).includes(a.id)?1:0)+(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));slots.forEach(slot=>{if(m[slot.id]?.length)return;const candidates=list(slot);const p=candidates.find(x=>preferred(x,slots)?.id===slot.id)||candidates[0];if(p){m[slot.id]=[p.id];used.add(p.id);}});return m;}
+function autoXI(pool:P[],slots:Slot[],prior:Maps={}){const m:Maps={},used=new Set<string>();const valid=new Set(pool.map(p=>p.id));slots.forEach(slot=>{const kept=(prior[slot.id]||[]).filter(id=>valid.has(id)&&!used.has(id));if(kept.length){m[slot.id]=kept;kept.forEach(id=>used.add(id));}});const compatible=(p:P,cat:Category)=>positionParts(p.position).map(category).includes(cat)||(cat==="DC"&&positionParts(p.position).map(category).some(c=>c==="DCE"||c==="DCD"))||(cat==="MC"&&positionParts(p.position).map(category).includes("MD"))||(cat==="MD"&&positionParts(p.position).map(category).includes("MC"));const list=(slot:Slot)=>pool.filter(p=>!used.has(p.id)&&compatible(p,slot.cat)).sort((a,b)=>((prior[slot.id]||[]).includes(b.id)?1:0)-((prior[slot.id]||[]).includes(a.id)?1:0)+(isXI(b)?1:0)-(isXI(a)?1:0)||ca(b)-ca(a));slots.forEach(slot=>{if(m[slot.id]?.length)return;const candidates=list(slot);const p=candidates.find(x=>preferred(x,slots)?.id===slot.id)||candidates[0];if(p){m[slot.id]=[p.id];used.add(p.id);}});return m;}
 const initials=(n:string)=>n.trim().split(/\s+/).slice(0,2).map(s=>s[0]||"").join("").toUpperCase();
 const statusClass=(s?:string)=>s==="Onze inicial"?"xi":s==="Vender"?"sell":s==="Emprestar"||s==="Emprestado"?"loan":s==="Comprar"?"buy":s==="Equipa B"?"b-team":s==="Sub-23"?"u23":"other";
 export default function Tactics({db,career,session,players,onStatusChange}:{db:any;career:any;session:any;players:P[];onStatusChange?:(id:string,status:string)=>void}){
