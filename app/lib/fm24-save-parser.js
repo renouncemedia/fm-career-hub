@@ -1362,4 +1362,6 @@ function suggestBestXI(players, formationKey) {
   return { formationLabel: formation.label, slots: result, total, filled, count: slots.length };
 }
 
+}
+
 export { parseSave, ROLES, ATTRIBUTES, POSITIONS, rateRole, NATIONS };
