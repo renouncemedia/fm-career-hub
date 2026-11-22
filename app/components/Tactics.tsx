@@ -12,20 +12,20 @@ const catNames:Record<string,string>={GR:"Guarda-redes",DC:"Defesas centrais",AE
 const norm=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]/g,"");
 const positionParts=(s:string)=>String(s||"").split(/[,;]/).map(norm).filter(Boolean);
 function category(pos:string){
- const parts=positionParts(pos);const p=parts[0]||norm(pos);const joined=parts.join("|");
+ const parts=positionParts(pos);const p=parts[0]||norm(pos);
  if(parts.some(x=>/^(gk|gr|goalkeeper|guardaredes)$/.test(x)))return"GR";
  if(parts.some(x=>/^(dc|dce|dcd|cb|cbl|cbr|sw|defc|defcentral)$/.test(x)||x.includes("central")))return"DC";
- if(parts.some(x=>/^(de|dl|lb|lwb|leftback|defe|alae|ml|me|mle|lw|aml|ae|mofe|ave|amle|mal|wbl)$/.test(x)||x.includes("esquer")))return"AE";
- if(parts.some(x=>/^(dd|dr|rb|rwb|rightback|defd|alad|mr|md|mrd|rw|amr|ad|mofd|avd|amrd|mar|wbr)$/.test(x)||x.includes("direit")))return"AD";
- if(parts.some(x=>/^(mdc|mcd|dm|dmc|defmid|mdef|mdm|mdefc)$/.test(x)||x.includes("defens")))return"MD";
+ if(parts.some(x=>/^(de|dl|lb|lwb|leftback|defe|alae|ml|me|mle|lw|aml|ae|mofe|ave|amle|mal|wbl|maml|dwl|wbll)$/.test(x)||x.includes("esquer")))return"AE";
+ if(parts.some(x=>/^(dd|dr|rb|rwb|rightback|defd|alad|mr|md|mrd|rw|amr|ad|mofd|avd|amrd|mar|wbr|mamr|dwr|dmr)$/.test(x)||x.includes("direit")))return"AD";
+ if(parts.some(x=>/^(mdc|mcd|dm|dmc|defmid|mdef|mdm|mdefc|dmd|dmm)$/.test(x)||x.includes("defens")))return"MD";
  if(parts.some(x=>/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(x)||x.includes("ofens")))return"MOC";
  if(parts.some(x=>/^(pl|st|cf|av|f9|af|att|ponta|avancado|striker)$/.test(x)||x.includes("avanc")||x.includes("pont")))return"PL";
  if(parts.some(x=>/^(mc|cm|m|mid|me|md|ml|mr|mcm|mec)$/.test(x)||x.includes("medio")))return"MC";
  if(/^(gk|gr|goalkeeper|guardaredes)$/.test(p))return"GR";
  if(/^(dc|dce|dcd|cb|cbl|cbr|sw|defc|defcentral)$/.test(p)||p.includes("central"))return"DC";
- if(/^(de|dl|lb|lwb|leftback|defe|alae|ml|me|mle|lw|aml|ae|mofe|ave|amle|mal|wbl)$/.test(p)||p.includes("esquer"))return"AE";
- if(/^(dd|dr|rb|rwb|rightback|defd|alad|mr|md|mrd|rw|amr|ad|mofd|avd|amrd|mar|wbr)$/.test(p)||p.includes("direit"))return"AD";
- if(/^(mdc|mcd|dm|dmc|defmid|mdef|mdm|mdefc)$/.test(p)||p.includes("defens"))return"MD";
+ if(/^(de|dl|lb|lwb|leftback|defe|alae|ml|me|mle|lw|aml|ae|mofe|ave|amle|mal|wbl|maml|dwl|wbll)$/.test(p)||p.includes("esquer"))return"AE";
+ if(/^(dd|dr|rb|rwb|rightback|defd|alad|mr|md|mrd|rw|amr|ad|mofd|avd|amrd|mar|wbr|mamr|dwr|dmr)$/.test(p)||p.includes("direit"))return"AD";
+ if(/^(mdc|mcd|dm|dmc|defmid|mdef|mdm|mdefc|dmd|dmm)$/.test(p)||p.includes("defens"))return"MD";
  if(/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(p)||p.includes("ofens"))return"MOC";
  if(/^(pl|st|cf|av|f9|af|att|ponta|avancado|striker)$/.test(p)||p.includes("avanc")||p.includes("pont"))return"PL";
  return"MC";
