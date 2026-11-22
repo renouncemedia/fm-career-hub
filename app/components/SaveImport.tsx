@@ -6,7 +6,7 @@ type Props = { db:any; career:any; session:any; onDone:()=>Promise<void> };
 type Preview = { save:FM24Save; fileName:string; existing:number; fresh:number; ambiguous:number; unmatched:number; squad:number; otherClubs:number; noClub:number };
 const normalise=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
 const uniqueByName=(players:FM24Player[])=>{const m=new Map<string,number>();for(const p of players){const k=normalise(p.fullName||p.name);m.set(k,(m.get(k)||0)+1);}return m;};
-const sameClub=(playerClub:string|undefined,careerClub:string|undefined)=>!!normalise(playerClub||"")&&!!normalise(careerClub||"")&&normalise(playerClub!)===normalise(careerClub!);
+const sameClub=(playerClub:string|null|undefined,careerClub:string|null|undefined)=>!!normalise(playerClub||"")&&!!normalise(careerClub||"")&&normalise(playerClub!)===normalise(careerClub!);
 
 export default function SaveImport({db,career,session,onDone}:Props){
  const input=useRef<HTMLInputElement>(null);
