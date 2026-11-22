@@ -84,11 +84,15 @@ export default function SaveImport({db,career,session,onDone}:Props){
      const year=gameDate.getUTCFullYear(),month=gameDate.getUTCMonth()+1;
      const seasonStart=month>=7?year:year-1;
      const seasonLabel=String(seasonStart)+"/"+String(seasonStart+1).slice(-2);
-     const found=await db.from("seasons").select("id").eq("career_id",career.id).eq("label",seasonLabel).maybeSingle();
+     const found=await db.from("seasons").select("id,is_current").eq("career_id",career.id).eq("label",seasonLabel).maybeSingle();
      if(found.error)throw found.error;
-     if(found.data)importedSeasonId=found.data.id;
-     else{
-      const createdSeason=await db.from("seasons").insert({owner_id:session.user.id,career_id:career.id,label:seasonLabel,start_date:String(seasonStart)+"-07-01",end_date:String(seasonStart+1)+"-06-30",is_current:false,notes:"Criada automaticamente a partir da data do save FM24."}).select("id").single();
+     const current=await db.from("seasons").select("id").eq("career_id",career.id).eq("is_current",true).maybeSingle();
+     if(current.error)throw current.error;
+     if(found.data){
+      importedSeasonId=found.data.id;
+      if(!current.data){const activate=await db.from("seasons").update({is_current:true}).eq("id",found.data.id);if(activate.error)throw activate.error;}
+     }else{
+      const createdSeason=await db.from("seasons").insert({owner_id:session.user.id,career_id:career.id,label:seasonLabel,start_date:String(seasonStart)+"-07-01",end_date:String(seasonStart+1)+"-06-30",is_current:!current.data,notes:"Criada automaticamente a partir da data do save FM24."}).select("id").single();
       if(createdSeason.error)throw createdSeason.error;
       importedSeasonId=createdSeason.data.id;
      }
