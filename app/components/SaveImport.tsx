@@ -1,0 +1,114 @@
+"use client";
+import { useMemo, useRef, useState } from "react";
+import { parseSave, type FM24Save, type FM24Player } from "../lib/fm24-save-parser";
+
+type Props = { db:any; career:any; session:any; onDone:()=>Promise<void> };
+type Preview = { save:FM24Save; fileName:string; existing:number; fresh:number; ambiguous:number; unmatched:number };
+const normalise=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
+const uniqueByName=(players:FM24Player[])=>{const m=new Map<string,number>();for(const p of players){const k=normalise(p.fullName||p.name);m.set(k,(m.get(k)||0)+1);}return m;};
+
+export default function SaveImport({db,career,session,onDone}:Props){
+ const input=useRef<HTMLInputElement>(null);
+ const [preview,setPreview]=useState<Preview|null>(null);
+ const [progress,setProgress]=useState(0);
+ const [message,setMessage]=useState("");
+ const [busy,setBusy]=useState(false);
+ const [error,setError]=useState("");
+ const [done,setDone]=useState("");
+ const counts=useMemo(()=>preview?{total:preview.save.players.length,existing:preview.existing,fresh:preview.fresh,ambiguous:preview.ambiguous,unmatched:preview.unmatched}:null,[preview]);
+ async function inspect(file?:File){
+  if(!file)return;
+  setBusy(true);setError("");setDone("");setPreview(null);setProgress(0);
+  try{
+   if(!file.name.toLowerCase().endsWith(".fm"))throw new Error("Seleciona um ficheiro de save com extensão .fm.");
+   const bytes=new Uint8Array(await file.arrayBuffer());
+   const save=await parseSave(bytes,(p,m)=>{setProgress(Math.round(p));setMessage(m);});
+   const {data:people,error:peopleError}=await db.from("players").select("id,full_name,external_ids").eq("owner_id",session.user.id);
+   if(peopleError)throw peopleError;
+   const {data:links,error:linkError}=await db.from("career_players").select("id,player_id").eq("career_id",career.id);
+   if(linkError)throw linkError;
+   const linkByPlayer=new Map((links||[]).map((x:any)=>[x.player_id,x.id]));
+   const byFmId=new Map<number,any>(),byName=new Map<string,any[]>();
+   for(const p of people||[]){
+    const fmId=Number(p.external_ids?.fm24?.id);
+    if(Number.isFinite(fmId)&&p.external_ids?.fm24?.id!==undefined)byFmId.set(fmId,p);
+    const k=normalise(p.full_name||"");if(k){const a=byName.get(k)||[];a.push(p);byName.set(k,a);}
+   }
+   const countsByName=uniqueByName(save.players);let existing=0,fresh=0,ambiguous=0,unmatched=0;
+   for(const p of save.players){
+    const match=byFmId.get(p.id)||((byName.get(normalise(p.fullName||p.name))||[]).length===1?(byName.get(normalise(p.fullName||p.name))||[])[0]:null);
+    if(match){if(linkByPlayer.has(match.id))existing++;else fresh++;}
+    else if((byName.get(normalise(p.fullName||p.name))||[]).length>1||(countsByName.get(normalise(p.fullName||p.name))||0)>1)ambiguous++;
+    else fresh++;
+   }
+   unmatched=0;
+   setPreview({save,fileName:file.name,existing,fresh,ambiguous,unmatched});
+   setMessage("Análise concluída. Confirma antes de importar.");
+  }catch(e:any){setError(e.message||"Não foi possível analisar o save.");}
+  setBusy(false);
+ }
+ async function apply(){
+  if(!preview)return;
+  setBusy(true);setError("");setDone("");setProgress(0);
+  let created=0,updated=0,skipped=0;
+  try{
+   const {data:people,error:peopleError}=await db.from("players").select("id,full_name,external_ids").eq("owner_id",session.user.id);
+   if(peopleError)throw peopleError;
+   const {data:links,error:linkError}=await db.from("career_players").select("id,player_id").eq("career_id",career.id);
+   if(linkError)throw linkError;
+   const byFmId=new Map<number,any>(),byName=new Map<string,any[]>();
+   for(const p of people||[]){
+    const id=Number(p.external_ids?.fm24?.id);if(Number.isFinite(id)&&p.external_ids?.fm24?.id!==undefined)byFmId.set(id,p);
+    const k=normalise(p.full_name||"");if(k){const a=byName.get(k)||[];a.push(p);byName.set(k,a);}
+   }
+   const linkByPlayer=new Map((links||[]).map((x:any)=>[x.player_id,x.id]));
+   const seen=new Set<string>();
+   for(let i=0;i<preview.save.players.length;i++){
+    const p=preview.save.players[i],key=normalise(p.fullName||p.name);
+    if(seen.has(String(p.id))){skipped++;continue;}seen.add(String(p.id));
+    const candidates=byName.get(key)||[];
+    let existing=byFmId.get(p.id)|| (candidates.length===1?candidates[0]:null);
+    if(candidates.length>1&&!byFmId.has(p.id)){skipped++;continue;}
+    const externalIds={...(existing?.external_ids||{}),fm24:{id:p.id,uid:p.uid,formatVersion:preview.save.formatVersion}};
+    let playerId:string;
+    if(existing){
+     playerId=existing.id;
+     const u=await db.from("players").update({full_name:p.fullName||p.name,date_of_birth:p.birthDate,nationality:(await import("../lib/fm24-save-parser")).NATIONS[String(p.nationId)]||null,positions:p.positions,external_ids:externalIds,updated_at:new Date().toISOString()}).eq("id",playerId);
+     if(u.error)throw u.error;
+     const linkId=linkByPlayer.get(playerId);
+     if(linkId){
+      const l=await db.from("career_players").update({ca:p.ca,pa:p.pa,age:p.age,club_name:p.club||null,position:p.positions.join(", "),updated_at:new Date().toISOString()}).eq("id",linkId);
+      if(l.error)throw l.error;
+     }else{
+      const l=await db.from("career_players").insert({owner_id:session.user.id,career_id:career.id,player_id:playerId,squad_status:"Plantel principal",club_name:p.club||null,position:p.positions.join(", "),ca:p.ca,pa:p.pa,age:p.age});
+      if(l.error)throw l.error;
+     }
+     updated++;
+    }else{
+     const ins=await db.from("players").insert({owner_id:session.user.id,full_name:p.fullName||p.name,date_of_birth:p.birthDate,nationality:(await import("../lib/fm24-save-parser")).NATIONS[String(p.nationId)]||null,positions:p.positions,external_ids:externalIds}).select("id").single();
+     if(ins.error)throw ins.error;playerId=ins.data.id;
+     const l=await db.from("career_players").insert({owner_id:session.user.id,career_id:career.id,player_id:playerId,squad_status:"Plantel principal",club_name:p.club||null,position:p.positions.join(", "),ca:p.ca,pa:p.pa,age:p.age});
+     if(l.error)throw l.error;created++;
+    }
+    const snap=await db.from("player_attribute_snapshots").insert({owner_id:session.user.id,career_id:career.id,player_id:playerId,ca:p.ca,pa:p.pa,attributes:{...p.attributes,positionRatings:p.positionRatings,rawAttributes:p.rawAttributes,gameDate:preview.save.gameDate,formatVersion:preview.save.formatVersion},source:"Save FM24"});
+    if(snap.error)throw snap.error;
+    if(i%10===0){setProgress(Math.round((i+1)/preview.save.players.length*100));setMessage("A guardar jogadores e snapshots...");}
+   }
+   const log=await db.from("import_jobs").insert({owner_id:session.user.id,career_id:career.id,source_format:"fm24-save",file_name:preview.fileName,status:"completed",records_total:preview.save.players.length,records_created:created,records_updated:updated,records_skipped:skipped,report:{gameDate:preview.save.gameDate,formatVersion:preview.save.formatVersion,saveName:preview.save.name,warnings:preview.save.warnings},completed_at:new Date().toISOString()});
+   if(log.error)throw log.error;
+   setDone("Importação concluída: "+created+" novos, "+updated+" atualizados, "+skipped+" ignorados.");
+   setPreview(null);await onDone();
+  }catch(e:any){setError(e.message||"Erro ao guardar os dados importados.");}
+  setBusy(false);
+ }
+ return <section className="panel" style={{marginBottom:20}}>
+  <div className="panel-heading"><div><p className="eyebrow">IMPORTAÇÃO AVANÇADA</p><h2>Save Football Manager 2024</h2></div><span className="status-tag">FM24 · 24.3</span></div>
+  <p className="intro">Lê o ficheiro .fm diretamente no navegador, extrai jogadores, CA, PA, atributos, posições e clube, e guarda um snapshot histórico. O parser original só valida saves no formato <b>24.3.0+0</b>.</p>
+  <input ref={input} type="file" accept=".fm" hidden onChange={e=>void inspect(e.target.files?.[0])}/>
+  <div className="panel-actions"><button className="outline-btn" disabled={busy} onClick={()=>input.current?.click()}>{busy?"A analisar...":"Selecionar save .fm"}</button>{preview&&<button className="primary-btn" disabled={busy} onClick={()=>void apply()}>Importar jogadores</button>}</div>
+  {busy&&<div style={{marginTop:14}}><div className="filters"><b>{progress}%</b><span>{message}</span></div><div style={{height:7,background:"var(--line)",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:progress+"%",background:"var(--accent)",transition:"width .2s"}}/></div></div>}
+  {counts&&<div className="stat-grid" style={{marginTop:16}}><article><span>JOGADORES NO SAVE</span><strong>{counts.total}</strong></article><article><span>JÁ NA CARREIRA</span><strong>{counts.existing}</strong></article><article><span>REGISTOS NOVOS</span><strong>{counts.fresh}</strong></article><article><span>NOMES AMBÍGUOS</span><strong>{counts.ambiguous}</strong></article></div>}
+  {preview&&preview.save.warnings.length>0&&<p className="alert">{preview.save.warnings.join(" ")}</p>}
+  {error&&<p className="alert error">{error}</p>}{done&&<p className="alert success">{done}</p>}
+ </section>;
+}
