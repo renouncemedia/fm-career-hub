@@ -1,33 +1,31 @@
 "use client";
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 type P={id:string;linkId?:string;name:string;position:string;status?:string;age?:number;ca?:number;club?:string;tipo?:string};
-type Category="GR"|"DC"|"AE"|"MC"|"MD"|"AD"|"MOC"|"PL";type Slot={id:string;cat:Category;x:number;y:number};type Maps=Record<string,string[]>;type FormationMaps=Record<string,Maps>;
+type Category="GR"|"DC"|"DCE"|"DCD"|"MD"|"MC"|"MOC"|"MOD"|"MOE"|"PLD"|"PLE";type Slot={id:string;cat:Category;x:number;y:number};type Maps=Record<string,string[]>;type FormationMaps=Record<string,Maps>;
 const formations:Record<string,Slot[]>={
-"3-4-1-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DC1",cat:"DC",x:24,y:72},{id:"DC2",cat:"DC",x:50,y:75},{id:"DC3",cat:"DC",x:76,y:72},{id:"AE",cat:"AE",x:10,y:50},{id:"MC",cat:"MC",x:36,y:53},{id:"MD",cat:"MD",x:64,y:53},{id:"AD",cat:"AD",x:90,y:50},{id:"MOC",cat:"MOC",x:50,y:33},{id:"PL1",cat:"PL",x:34,y:13},{id:"PL2",cat:"PL",x:66,y:13}],
-"3-5-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DC1",cat:"DC",x:24,y:72},{id:"DC2",cat:"DC",x:50,y:75},{id:"DC3",cat:"DC",x:76,y:72},{id:"AE",cat:"AE",x:10,y:46},{id:"MC1",cat:"MC",x:34,y:51},{id:"MD",cat:"MD",x:50,y:62},{id:"MC2",cat:"MC",x:66,y:51},{id:"AD",cat:"AD",x:90,y:46},{id:"PL1",cat:"PL",x:34,y:14},{id:"PL2",cat:"PL",x:66,y:14}],
-"4-3-3":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"AE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"AD",x:89,y:70},{id:"MC1",cat:"MC",x:28,y:50},{id:"MD",cat:"MC",x:50,y:58},{id:"MC2",cat:"MC",x:72,y:50},{id:"AE",cat:"AE",x:17,y:19},{id:"PL",cat:"PL",x:50,y:13},{id:"AD",cat:"AD",x:83,y:19}],
-"4-2-3-1":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"AE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"AD",x:89,y:70},{id:"MD1",cat:"MD",x:36,y:54},{id:"MD2",cat:"MC",x:64,y:54},{id:"AE",cat:"AE",x:15,y:33},{id:"MOC",cat:"MOC",x:50,y:32},{id:"AD",cat:"AD",x:85,y:33},{id:"PL",cat:"PL",x:50,y:12}],
-"4-4-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"AE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"AD",x:89,y:70},{id:"AE",cat:"AE",x:10,y:46},{id:"MC1",cat:"MC",x:36,y:50},{id:"MC2",cat:"MC",x:64,y:50},{id:"AD",cat:"AD",x:90,y:46},{id:"PL1",cat:"PL",x:36,y:14},{id:"PL2",cat:"PL",x:64,y:14}]};
-const catNames:Record<Category,string>={GR:"Guarda-redes",DC:"Defesas centrais",AE:"Ala esquerdo",AD:"Ala direito",MD:"Médio defensivo",MC:"Médio centro",MOC:"Médio ofensivo",PL:"Avançados"};
+"3-4-1-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DC1",cat:"DCE",x:24,y:72},{id:"DC2",cat:"DC",x:50,y:75},{id:"DC3",cat:"DCD",x:76,y:72},{id:"AE",cat:"PLE",x:10,y:50},{id:"MC",cat:"MC",x:36,y:53},{id:"MD",cat:"MD",x:64,y:53},{id:"AD",cat:"PLD",x:90,y:50},{id:"MOC",cat:"MOC",x:50,y:33},{id:"PL1",cat:"PLE",x:34,y:13},{id:"PL2",cat:"PLD",x:66,y:13}],
+"3-5-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DC1",cat:"DCE",x:24,y:72},{id:"DC2",cat:"DC",x:50,y:75},{id:"DC3",cat:"DCD",x:76,y:72},{id:"AE",cat:"PLE",x:10,y:46},{id:"MC1",cat:"MC",x:34,y:51},{id:"MD",cat:"MD",x:50,y:62},{id:"MC2",cat:"MC",x:66,y:51},{id:"AD",cat:"PLD",x:90,y:46},{id:"PL1",cat:"PLE",x:34,y:14},{id:"PL2",cat:"PLD",x:66,y:14}],
+"4-3-3":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"DCE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"DCD",x:89,y:70},{id:"MC1",cat:"MC",x:28,y:50},{id:"MD",cat:"MC",x:50,y:58},{id:"MC2",cat:"MC",x:72,y:50},{id:"AE",cat:"MOE",x:17,y:19},{id:"PL",cat:"MOC",x:50,y:13},{id:"AD",cat:"MOD",x:83,y:19}],
+"4-2-3-1":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"DCE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"DCD",x:89,y:70},{id:"MD1",cat:"MD",x:36,y:54},{id:"MD2",cat:"MC",x:64,y:54},{id:"AE",cat:"MOE",x:15,y:33},{id:"MOC",cat:"MOC",x:50,y:32},{id:"AD",cat:"MOD",x:85,y:33},{id:"PL",cat:"PLD",x:50,y:12}],
+"4-4-2":[{id:"GR",cat:"GR",x:50,y:90},{id:"DE",cat:"PLE",x:11,y:70},{id:"DC1",cat:"DC",x:36,y:75},{id:"DC2",cat:"DC",x:64,y:75},{id:"DD",cat:"PLD",x:89,y:70},{id:"AE",cat:"PLE",x:10,y:46},{id:"MC1",cat:"MC",x:36,y:50},{id:"MC2",cat:"MC",x:64,y:50},{id:"AD",cat:"PLD",x:90,y:46},{id:"PL1",cat:"PLE",x:36,y:14},{id:"PL2",cat:"PLD",x:64,y:14}]};
+const catNames:Record<Category,string>={GR:"Guarda Redes",DC:"Defesa Centro",DCE:"Defesa Centro Esquerdo",DCD:"Defesa Centro Direito",MD:"Médio Defensivo",MC:"Médio Centro",MOC:"Médio Ofensivo Centro",MOD:"Médio Ofensivo Direito",MOE:"Médio Ofensivo Esquerdo",PLD:"Ponta Direito",PLE:"Ponta Esquerdo"};
 const norm=(s:string)=>s.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]/g,"");
 const positionParts=(s:string)=>String(s||"").split(/[,;]/).map(norm).filter(Boolean);
 function category(pos:string):Category{
  const parts=positionParts(pos);const p=parts[0]||norm(pos);
  if(parts.some(x=>/^(gk|gr|goalkeeper|guardaredes)$/.test(x)))return"GR";
- if(parts.some(x=>/^(dc|dce|dcd|cb|cbl|cbr|sw|defc|defcentral)$/.test(x)||x.includes("central")))return"DC";
- if(parts.some(x=>/^(de|dl|lb|lwb|leftback|defe|alae|ml|me|mle|lw|aml|ae|mofe|ave|amle|mal|wbl|maml|dwl|maml|dwl|dwbl|maml|dwl|dwbl|wbll)$/.test(x)||x.includes("esquer")))return"AE";
- if(parts.some(x=>/^(dd|dr|rb|rwb|rightback|defd|alad|mr|md|mrd|rw|amr|ad|mofd|avd|amrd|mar|wbr|mamr|dwr|mamr|dwr|dwbr|mamr|dwr|dwbr|dmr)$/.test(x)||x.includes("direit")))return"AD";
- if(parts.some(x=>/^(mdc|mcd|dm|dmc|defmid|mdef|mdm|mdefc|dmd|dmm)$/.test(x)||x.includes("defens")))return"MD";
- if(parts.some(x=>/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(x)||x.includes("ofens")))return"MOC";
- if(parts.some(x=>/^(pl|st|cf|av|f9|af|att|ponta|avancado|striker)$/.test(x)||x.includes("avanc")||x.includes("pont")))return"PL";
- if(parts.some(x=>/^(mc|cm|m|mid|me|md|ml|mr|mcm|mec)$/.test(x)||x.includes("medio")))return"MC";
- if(/^(gk|gr|goalkeeper|guardaredes)$/.test(p))return"GR";
- if(/^(dc|dce|dcd|cb|cbl|cbr|sw|defc|defcentral)$/.test(p)||p.includes("central"))return"DC";
- if(/^(de|dl|lb|lwb|leftback|defe|alae|ml|me|mle|lw|aml|ae|mofe|ave|amle|mal|wbl|maml|dwl|maml|dwl|dwbl|maml|dwl|dwbl|wbll)$/.test(p)||p.includes("esquer"))return"AE";
- if(/^(dd|dr|rb|rwb|rightback|defd|alad|mr|md|mrd|rw|amr|ad|mofd|avd|amrd|mar|wbr|mamr|dwr|mamr|dwr|dwbr|mamr|dwr|dwbr|dmr)$/.test(p)||p.includes("direit"))return"AD";
- if(/^(mdc|mcd|dm|dmc|defmid|mdef|mdm|mdefc|dmd|dmm)$/.test(p)||p.includes("defens"))return"MD";
- if(/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(p)||p.includes("ofens"))return"MOC";
- if(/^(pl|st|cf|av|f9|af|att|ponta|avancado|striker)$/.test(p)||p.includes("avanc")||p.includes("pont"))return"PL";
+ if(parts.some(x=>/^(dce|cbl|leftcb|defesacentroesquerdo)$/.test(x)||x.includes("centroesquerdo")))return"DCE";
+ if(parts.some(x=>/^(dcd|cbr|rightcb|defesacentrodireito)$/.test(x)||x.includes("centrodireito")))return"DCD";
+ if(parts.some(x=>/^(dc|cb|sw|defc|defcentral)$/.test(x)||x==="central"))return"DC";
+ if(parts.some(x=>/^(de|dl|lb|lwb|leftback|defe|alae|wbl)$/.test(x)||x.includes("esquer")))return"PLE";
+ if(parts.some(x=>/^(dd|dr|rb|rwb|rightback|defd|alad|wbr)$/.test(x)||x.includes("direit")))return"PLD";
+ if(parts.some(x=>/^(md|mdc|mcd|dm|dmc|defmid|mdef|mdm)$/.test(x)||x.includes("defens")))return"MD";
+ if(parts.some(x=>/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(x)||x.includes("ofensivocentro")))return"MOC";
+ if(parts.some(x=>/^(mod|amr|rw|mofd|avd|amrd|mar)$/.test(x)||x.includes("ofensivodireit")))return"MOD";
+ if(parts.some(x=>/^(moe|aml|lw|mofe|ave|amle|mal)$/.test(x)||x.includes("ofensivoesquer")))return"MOE";
+ if(parts.some(x=>/^(pld|st|cf|av|f9|af|att|striker|ponta)$/.test(x)||x.includes("pontadireit")))return"PLD";
+ if(parts.some(x=>/^(ple|pl|leftstriker|pontaesquerdo)$/.test(x)||x.includes("pontaesquer")))return"PLE";
+ if(parts.some(x=>/^(mc|cm|m|mid|me|ml|mr|mcm|mec)$/.test(x)||x.includes("mediocentro")))return"MC";
  return"MC";
 }
 function preferred(p:P,F:Slot[]){
