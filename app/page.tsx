@@ -12,11 +12,23 @@ const db=url&&key?createClient(url,key):null;
 const statuses=["Plantel principal","Rotação","Emprestado","Sub-23","Sub-19","Observação","Alvo de transferência","Vendido"];
 const empty:Draft={name:"",nationality:"",position:"",ca:null,pa:null,age:null,status:statuses[0],club:"",notes:"",tags:[]};
 const num=(v:unknown):number|null=>{const n=Number(String(v??"").replace(",",".").replace(/[^0-9.-]/g,""));return String(v??"").trim()!==""&&Number.isFinite(n)?n:null};
-function csvRows(s:string){const d=(s.split(/\r?
-/,1)[0].match(/;/g)||[]).length>(s.split(/\r?
-/,1)[0].match(/,/g)||[]).length?";":",";const rows:string[][]=[];let row:string[]=[],v="",q=false;for(let i=0;i<s.length;i++){const c=s[i];if(c==='"'&&q&&s[i+1]==='"'){v+='"';i++;}else if(c==='"')q=!q;else if(c===d&&!q){row.push(v.trim());v="";}else if((c==="
-"||c==="\r")&&!q){if(c==="\r"&&s[i+1]==="
-")i++;row.push(v.trim());if(row.some(Boolean))rows.push(row);row=[];v="";}else v+=c;}row.push(v.trim());if(row.some(Boolean))rows.push(row);const h=(rows.shift()||[]).map(x=>x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_"));return rows.map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]||""])));}
+function csvRows(s:string){
+ const firstEnd=s.indexOf("\n");
+ const firstLine=s.slice(0,firstEnd<0?s.length:firstEnd).replace(/\r/g,"");
+ const delimiter=(firstLine.match(/;/g)||[]).length>(firstLine.match(/,/g)||[]).length?";":",";
+ const rows:string[][]=[];let row:string[]=[],value="",quoted=false;
+ for(let i=0;i<s.length;i++){
+  const ch=s[i];
+  if(ch==='"'&&quoted&&s[i+1]==='"'){value+='"';i++;}
+  else if(ch==='"')quoted=!quoted;
+  else if(ch===delimiter&&!quoted){row.push(value.trim());value="";}
+  else if((ch==="\n"||ch==="\r")&&!quoted){if(ch==="\r"&&s[i+1]==="\n")i++;row.push(value.trim());if(row.some(Boolean))rows.push(row);row=[];value="";}
+  else value+=ch;
+ }
+ row.push(value.trim());if(row.some(Boolean))rows.push(row);
+ const headers=(rows.shift()||[]).map(x=>x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"_"));
+ return rows.map(values=>Object.fromEntries(headers.map((key,i)=>[key,values[i]||""])));
+}
 function imported(r:Record<string,any>):Draft{const get=(...ks:string[])=>ks.map(k=>r[k]).find(v=>v!==undefined&&v!==null&&String(v).trim()!=="")??"";return{name:String(get("name","nome","player","jogador","full_name")).trim(),nationality:String(get("nationality","nacionalidade","country","pais")),position:String(get("position","posicao","positions","posicoes")),ca:num(get("ca","current_ability")),pa:num(get("pa","potential_ability")),age:num(get("age","idade")),status:String(get("status","squad_status","estado","categoria")||statuses[0]),club:String(get("club","club_name","clube","equipa")),notes:String(get("notes","notas","observacoes")),tags:Array.isArray(r.tags)?r.tags.map(String):String(r.tags||"").split(/[;,]/).map(x=>x.trim()).filter(Boolean)};}
 function download(s:string,n:string,t:string){const u=URL.createObjectURL(new Blob([s],{type:t}));const a=document.createElement("a");a.href=u;a.download=n;a.click();URL.revokeObjectURL(u);}
 
