@@ -7,7 +7,9 @@ type Preview = { save:FM24Save; fileName:string; existing:number; fresh:number; 
 const normalise=(s:string)=>s.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
 const uniqueByName=(players:FM24Player[])=>{const m=new Map<string,number>();for(const p of players){const k=normalise(p.fullName||p.name);m.set(k,(m.get(k)||0)+1);}return m;};
 const clubKey=(value:string|null|undefined)=>{
- const key=normalise(value||"");
+ let key=normalise(value||"");
+ // Equipas B, reservas e escalões de formação pertencem ao clube-mãe.
+ key=key.replace(/(?:b|ii|u(?:19|20|21|23)|reserves?|reservas|sub(?:19|20|21|23))$/,"");
  const aliases:Record<string,string>={"sportingcp":"sporting","sportingclubedeportugal":"sporting","sportingclubedeportugalfutebol":"sporting"};
  return aliases[key]||key;
 };
