@@ -54,7 +54,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
     const belongsToCareer=sameClub(p.club,targetClub)||sameClub(p.contractClub,targetClub);
     if(!belongsToCareer){if(!p.club)noClub++;else otherClubs++;continue;}
     squad++;
-    if(p.loanedOut&&sameClub(p.contractClub,targetClub))loanedOut++;
+    if(p.loanedOut&&sameClub(p.contractClub,targetClub)&&!sameClub(p.club,targetClub))loanedOut++;
     const match=byFmId.get(p.id)||((byName.get(normalise(p.fullName||p.name))||[]).length===1?(byName.get(normalise(p.fullName||p.name))||[])[0]:null);
     if(match){if(linkByPlayer.has(match.id))existing++;else fresh++;}
     else if((byName.get(normalise(p.fullName||p.name))||[]).length>1||(countsByName.get(normalise(p.fullName||p.name))||0)>1)ambiguous++;
@@ -106,7 +106,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
    const squadPlayers=preview.save.players.filter(p=>sameClub(p.club,String(career.club_name||""))||sameClub(p.contractClub,String(career.club_name||"")));
    if(!squadPlayers.length){const detected=[...new Set(preview.save.players.map(p=>p.club).filter(Boolean))].slice(0,20).join(", ");throw new Error("Não encontrei correspondência para o clube da carreira ("+(career.club_name||"não definido")+"). Clubes detetados no save: "+(detected||"nenhum identificado")+". Nenhum jogador foi importado.");}
    for(let i=0;i<squadPlayers.length;i++){
-    const p=squadPlayers[i],key=normalise(p.fullName||p.name),isLoanedOut=!!p.loanedOut&&sameClub(p.contractClub,String(career.club_name||""));
+    const p=squadPlayers[i],key=normalise(p.fullName||p.name),isLoanedOut=!!p.loanedOut&&sameClub(p.contractClub,String(career.club_name||""))&&!sameClub(p.club,String(career.club_name||""));
     if(seen.has(String(p.id))){skipped++;continue;}seen.add(String(p.id));
     const candidates=byName.get(key)||[];
     let existing=byFmId.get(p.id)|| (candidates.length===1?candidates[0]:null);
