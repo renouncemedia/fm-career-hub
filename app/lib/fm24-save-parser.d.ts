@@ -1,7 +1,7 @@
 export type FM24Player = {
   id: number; uid: number; name: string; fullName: string; age: number;
   birthDate: string; nationId: number; otherNationIds: number[]; clubId: number | null;
-  club: string | null; clubFullName: string | null; ca: number; pa: number;
+  club: string | null; clubFullName: string | null; contractClubId: number | null; contractClub: string | null; contractClubFullName: string | null; loanedOut: boolean; loanDestination: string | null; ca: number; pa: number;
   positions: string[]; positionRatings: number[]; attributes: Record<string, number>;
   rawAttributes: number[];
 };
