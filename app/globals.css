@@ -445,25 +445,25 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 /* Estados adicionais do jogador no relvado */
 .fm-app .tactics-panel .pitch-player.rotation{background:rgba(20,83,45,.94);border-color:#4ade80;color:#f0fdf4}.fm-app .tactics-panel .pitch-player.sub{background:rgba(51,65,85,.94);border-color:#cbd5e1;color:#f8fafc}.fm-app .tactics-panel .pitch-player.u19{background:rgba(124,45,18,.94);border-color:#fb923c;color:#fff7ed}.fm-app .tactics-panel .pitch-player.scouting{background:rgba(55,48,163,.94);border-color:#818cf8;color:#eef2ff}.fm-app .tactics-panel .pitch-player.sold{background:rgba(69,10,10,.94);border-color:#f87171;color:#fee2e2}
 
-/* Relvado compacto: mostrar todas as opções sem scroll interno */
-.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{max-width:980px!important;width:100%!important;aspect-ratio:16/10!important;max-height:calc(100vh - 250px)!important;margin-left:auto!important;margin-right:auto!important}
-.fm-app .tactics-panel .pitch-slot{width:clamp(92px,17%,132px)!important;max-width:132px!important;gap:3px!important}
-.fm-app .tactics-panel .pitch-slot-players{max-height:none!important;height:auto!important;overflow:visible!important;gap:3px!important}
-.fm-app .tactics-panel .pitch-player{padding:5px 6px 5px 25px!important;border-radius:7px!important;gap:1px!important}
-.fm-app .tactics-panel .pitch-player-avatar{width:16px!important;height:16px!important;left:5px!important;top:5px!important;font-size:7px!important}
-.fm-app .tactics-panel .pitch-player b{font-size:9px!important;line-height:1.15!important}
-.fm-app .tactics-panel .pitch-player small,.fm-app .tactics-panel .pitch-player em{font-size:7px!important;line-height:1.1!important}
-/* Cores distintas para cada estado */
-.fm-app .tactics-panel .pitch-player.xi{background:#087f46!important;border-color:#34d399!important;color:#ecfdf5!important}
-.fm-app .tactics-panel .pitch-player.rotation{background:#166534!important;border-color:#86efac!important;color:#f0fdf4!important}
-.fm-app .tactics-panel .pitch-player.sub{background:#334155!important;border-color:#cbd5e1!important;color:#f8fafc!important}
-.fm-app .tactics-panel .pitch-player.sell{background:#991b1b!important;border-color:#f87171!important;color:#fff1f2!important}
-.fm-app .tactics-panel .pitch-player.loan{background:#1d4ed8!important;border-color:#93c5fd!important;color:#eff6ff!important}
-.fm-app .tactics-panel .pitch-player.buy{background:#6d28d9!important;border-color:#c4b5fd!important;color:#f5f3ff!important}
-.fm-app .tactics-panel .pitch-player.b-team{background:#475569!important;border-color:#94a3b8!important;color:#f8fafc!important}
-.fm-app .tactics-panel .pitch-player.u23{background:#b45309!important;border-color:#fbbf24!important;color:#fffbeb!important}
-.fm-app .tactics-panel .pitch-player.u19{background:#9a3412!important;border-color:#fdba74!important;color:#fff7ed!important}
-.fm-app .tactics-panel .pitch-player.scouting{background:#4338ca!important;border-color:#a5b4fc!important;color:#eef2ff!important}
-.fm-app .tactics-panel .pitch-player.sold{background:#7f1d1d!important;border-color:#fca5a5!important;color:#fee2e2!important}
-.fm-app .tactics-panel .pitch-player.other{background:#0f172a!important;border-color:#64748b!important;color:#f8fafc!important}
-@media(max-width:760px){.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{max-width:100%!important;max-height:none!important;aspect-ratio:4/5!important}.fm-app .tactics-panel .pitch-slot{width:clamp(84px,28%,116px)!important}.fm-app .tactics-panel .pitch-player{padding-left:23px!important}}
+/* Relvado: dimensões e cards próximos da referência; sem scroll interno */
+.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{max-width:1240px!important;width:100%!important;aspect-ratio:16/10!important;max-height:none!important;margin:0 auto!important;overflow:visible!important}
+.fm-app .tactics-panel .pitch-slot{width:clamp(108px,23%,154px)!important;max-width:154px!important;gap:5px!important}
+.fm-app .tactics-panel .pitch-slot-players{max-height:none!important;height:auto!important;overflow:visible!important;gap:5px!important}
+.fm-app .tactics-panel .pitch-player{padding:8px 7px 7px 31px!important;border-radius:9px!important;gap:2px!important}
+.fm-app .tactics-panel .pitch-player-avatar{width:20px!important;height:20px!important;left:6px!important;top:8px!important;font-size:8px!important}
+.fm-app .tactics-panel .pitch-player b{font-size:10px!important;line-height:1.25!important}
+.fm-app .tactics-panel .pitch-player small,.fm-app .tactics-panel .pitch-player em{font-size:8px!important;line-height:normal!important}
+/* Cores distintas por estado, mantendo tamanho e estilo dos cards */
+.fm-app .tactics-panel .pitch-player.xi{background:rgba(16,120,65,.94)!important;border-color:#22c55e!important;color:#f0fdf4!important}
+.fm-app .tactics-panel .pitch-player.rotation{background:rgba(20,83,45,.94)!important;border-color:#4ade80!important;color:#f0fdf4!important}
+.fm-app .tactics-panel .pitch-player.sub{background:rgba(51,65,85,.94)!important;border-color:#cbd5e1!important;color:#f8fafc!important}
+.fm-app .tactics-panel .pitch-player.sell{background:rgba(153,27,27,.94)!important;border-color:#ef4444!important;color:#fff1f2!important}
+.fm-app .tactics-panel .pitch-player.loan{background:rgba(30,64,175,.94)!important;border-color:#60a5fa!important;color:#eff6ff!important}
+.fm-app .tactics-panel .pitch-player.buy{background:rgba(91,33,182,.94)!important;border-color:#a78bfa!important;color:#f5f3ff!important}
+.fm-app .tactics-panel .pitch-player.b-team{background:rgba(71,85,105,.94)!important;border-color:#94a3b8!important;color:#f8fafc!important}
+.fm-app .tactics-panel .pitch-player.u23{background:rgba(180,83,9,.94)!important;border-color:#fbbf24!important;color:#fffbeb!important}
+.fm-app .tactics-panel .pitch-player.u19{background:rgba(124,45,18,.94)!important;border-color:#fb923c!important;color:#fff7ed!important}
+.fm-app .tactics-panel .pitch-player.scouting{background:rgba(55,48,163,.94)!important;border-color:#818cf8!important;color:#eef2ff!important}
+.fm-app .tactics-panel .pitch-player.sold{background:rgba(69,10,10,.94)!important;border-color:#f87171!important;color:#fee2e2!important}
+.fm-app .tactics-panel .pitch-player.other{background:rgba(12,17,15,.88)!important;border-color:rgba(255,255,255,.25)!important;color:#f5f5f7!important}
+@media(max-width:760px){.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{aspect-ratio:4/5!important;max-width:100%!important}.fm-app .tactics-panel .pitch-slot{width:clamp(96px,28%,128px)!important}}
