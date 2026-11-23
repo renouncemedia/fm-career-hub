@@ -30,8 +30,8 @@ function preferred(p:P,F:Slot[]){
  const raw=positionParts(p.position);const cats=raw.map(category);const joined=raw.join("|");
  const rightDef=raw.some(x=>/^(dd|dr|rb|rwb|defd|alad|wbr|dcd|dcr|drc)$/.test(x));
  const leftDef=raw.some(x=>/^(de|dl|lb|lwb|defe|alae|wbl|dce|dcl|dlc)$/.test(x));
- const rightWide=raw.some(x=>/^(md|mr|mrd|rw|amr|ad|mod|mofd|avd|amrd|mar|pld|rightwing|rightmid)$/.test(x))||joined.includes("direit");
- const leftWide=raw.some(x=>/^(me|ml|mle|lw|aml|ae|moe|mofe|ave|amle|mal|ple|leftwing|leftmid)$/.test(x))||joined.includes("esquer");
+ const rightWide=raw.some(x=>/^(md|mr|mrd|rw|amr|ad|mod|mofd|avd|amrd|mar|pld|pd|rightwing|rightmid)$/.test(x))||joined.includes("direit");
+ const leftWide=raw.some(x=>/^(me|ml|mle|lw|aml|ae|moe|mofe|ave|amle|mal|ple|pe|leftwing|leftmid)$/.test(x))||joined.includes("esquer");
  const central=raw.some(x=>/^(dc|dce|dcd|cb|sw|defc|dcl|dcr)$/.test(x))||joined.includes("central");
  const ids=rightDef?["DD","DC3","AD"]:leftDef?["DE","DC1","AE"]:rightWide?["AD","PL2","DD"]:leftWide?["AE","PL1","DE"]:central?["DC2","DC1","DC3"]:joined.includes("defens")?["MD"]:joined.includes("ofens")?["MOC"]:[];
  return ids.map(id=>F.find(s=>s.id===id&&cats.includes(s.cat))).find(Boolean)||null;
