@@ -1205,6 +1205,23 @@ async function parseSave(rawBytes, onProgress = () => {}) {
   onProgress(82, 'A construir perfis de jogadores…'); await tick();
   const players = linked.map(({ person: p, ability: ab }) => {
     const clubId = teamMap.get(ab.team)?.club ?? squads.get(p.id) ?? null;
+    // FM24 contract rows: [person id][team][00 x4][weekly wage][01 ?? 00].
+    // The first positive-wage row identifies the owning club; loan rows at
+    // the destination club generally have zero wage.
+    const contractWindow = b.subarray(Math.max(0, p.offset - 4000), p.offset);
+    let contractClubId = null;
+    const personIdBytes = new Uint8Array(4);
+    new DataView(personIdBytes.buffer).setUint32(0, p.id, true);
+    for (let row = 0; row + 19 <= contractWindow.length; row++) {
+      if (contractWindow[row] !== personIdBytes[0] || contractWindow[row+1] !== personIdBytes[1] ||
+          contractWindow[row+2] !== personIdBytes[2] || contractWindow[row+3] !== personIdBytes[3]) continue;
+      if (contractWindow[row+8] || contractWindow[row+9] || contractWindow[row+10] || contractWindow[row+11] ||
+          contractWindow[row+16] !== 1 || contractWindow[row+18] !== 0) continue;
+      const wage = new DataView(contractWindow.buffer, contractWindow.byteOffset, contractWindow.byteLength).getUint32(row+12, true);
+      const team = new DataView(contractWindow.buffer, contractWindow.byteOffset, contractWindow.byteLength).getUint32(row+4, true);
+      if (wage > 0 && teamMap.get(team)?.club != null) { contractClubId = teamMap.get(team).club; break; }
+    }
+    const loanedOut = contractClubId !== null && clubId !== null && contractClubId !== clubId;
     const raw = [...ab.raw, ...p.personality];
     const attributes = {};
     for (const x of ATTRIBUTES) attributes[x.key] = x.scale === 5 ? displayAttribute(raw[x.index]) : raw[x.index];
@@ -1215,6 +1232,11 @@ async function parseSave(rawBytes, onProgress = () => {}) {
       nationId: p.nation, otherNationIds: p.otherNations, clubId,
       club: clubId === null ? null : (clubMap.get(clubId)?.shortName ?? null),
       clubFullName: clubId === null ? null : (clubMap.get(clubId)?.name ?? null),
+      contractClubId,
+      contractClub: contractClubId === null ? null : (clubMap.get(contractClubId)?.shortName ?? null),
+      contractClubFullName: contractClubId === null ? null : (clubMap.get(contractClubId)?.name ?? null),
+      loanedOut,
+      loanDestination: loanedOut ? (clubId === null ? null : (clubMap.get(clubId)?.shortName ?? null)) : null,
       ca: ab.ca, pa: ab.pa,
       positions: POSITIONS.filter((_, i) => ab.positions[i] >= 15),
       positionRatings: ab.positions,
