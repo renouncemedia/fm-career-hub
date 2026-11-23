@@ -467,3 +467,29 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 .fm-app .tactics-panel .pitch-player.sold{background:rgba(69,10,10,.94)!important;border-color:#f87171!important;color:#fee2e2!important}
 .fm-app .tactics-panel .pitch-player.other{background:rgba(12,17,15,.88)!important;border-color:rgba(255,255,255,.25)!important;color:#f5f5f7!important}
 @media(max-width:760px){.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{aspect-ratio:4/5!important;max-width:100%!important}.fm-app .tactics-panel .pitch-slot{width:clamp(96px,28%,128px)!important}}
+
+
+/* Tactical pitch — cards restored to reference layout; no internal scrolling */
+.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{width:100%!important;max-width:1240px!important;aspect-ratio:auto!important;height:auto!important;min-height:clamp(780px,76vw,1080px)!important;max-height:none!important;overflow:visible!important;margin:0 auto!important;border-radius:26px!important}
+.fm-app .tactics-panel .pitch-slot{width:clamp(118px,24%,150px)!important;max-width:150px!important;gap:4px!important;z-index:3!important}
+.fm-app .tactics-panel .pitch-slot-players{width:100%!important;max-height:none!important;height:auto!important;overflow:visible!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:5px!important}
+.fm-app .tactics-panel .pitch-player{width:100%!important;min-width:0!important;min-height:42px!important;display:grid!important;grid-template-columns:34px minmax(0,1fr)!important;align-items:center!important;gap:7px!important;padding:5px 18px 5px 5px!important;border-radius:10px!important;border:1px solid rgba(255,255,255,.35)!important;box-shadow:0 4px 14px rgba(0,0,0,.25)!important;backdrop-filter:none!important;text-align:left!important}
+.fm-app .tactics-panel .pitch-player-ca{display:grid!important;place-items:center!important;min-width:32px!important;height:30px!important;border-radius:7px!important;background:rgba(0,0,0,.25)!important;color:inherit!important;font:800 18px/1 var(--font)!important;font-style:normal!important}
+.fm-app .tactics-panel .pitch-player-info{min-width:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;gap:1px!important}
+.fm-app .tactics-panel .pitch-player-info b{display:block!important;width:100%!important;font-size:11.5px!important;line-height:1.25!important;font-weight:700!important;white-space:normal!important;overflow-wrap:anywhere!important}
+.fm-app .tactics-panel .pitch-player-info small{font-size:9px!important;line-height:1.2!important;opacity:.8!important;white-space:normal!important;overflow-wrap:anywhere!important}
+.fm-app .tactics-panel .pitch-player-info em{font-size:9px!important;line-height:1.2!important;font-style:normal!important;font-weight:700!important;opacity:1!important}
+.fm-app .tactics-panel .pitch-player.xi{background:#15803d!important;border-color:#4ade80!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.rotation{background:#14532d!important;border-color:#86efac!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.sub{background:#1d4ed8!important;border-color:#93c5fd!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.sell{background:#b91c1c!important;border-color:#fca5a5!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.loan{background:#c2410c!important;border-color:#fdba74!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.buy{background:#7e22ce!important;border-color:#d8b4fe!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.b-team{background:#475569!important;border-color:#cbd5e1!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.u23{background:#0e7490!important;border-color:#67e8f9!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.u19{background:#9a3412!important;border-color:#fdba74!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.scouting{background:#3730a3!important;border-color:#a5b4fc!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.sold{background:#450a0a!important;border-color:#fca5a5!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player.other{background:#334155!important;border-color:#cbd5e1!important;color:#fff!important}
+.fm-app .tactics-panel .pitch-player-remove{right:2px!important;top:2px!important;color:#fff!important;opacity:.85!important}
+@media(max-width:760px){.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{min-height:900px!important;height:auto!important;aspect-ratio:auto!important}.fm-app .tactics-panel .pitch-slot{width:clamp(108px,30%,132px)!important}.fm-app .tactics-panel .pitch-player{grid-template-columns:28px minmax(0,1fr)!important;padding:4px 15px 4px 4px!important}.fm-app .tactics-panel .pitch-player-ca{min-width:27px!important;height:27px!important;font-size:16px!important}.fm-app .tactics-panel .pitch-player-info b{font-size:10px!important}}
