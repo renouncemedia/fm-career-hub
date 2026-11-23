@@ -493,3 +493,11 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 .fm-app .tactics-panel .pitch-player.other{background:#334155!important;border-color:#cbd5e1!important;color:#fff!important}
 .fm-app .tactics-panel .pitch-player-remove{right:2px!important;top:2px!important;color:#fff!important;opacity:.85!important}
 @media(max-width:760px){.fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{min-height:900px!important;height:auto!important;aspect-ratio:auto!important}.fm-app .tactics-panel .pitch-slot{width:clamp(108px,30%,132px)!important}.fm-app .tactics-panel .pitch-player{grid-template-columns:28px minmax(0,1fr)!important;padding:4px 15px 4px 4px!important}.fm-app .tactics-panel .pitch-player-ca{min-width:27px!important;height:27px!important;font-size:16px!important}.fm-app .tactics-panel .pitch-player-info b{font-size:10px!important}}
+
+/* Cards compactos no relvado: sem posição e com menor altura */
+.fm-app .tactics-panel .pitch-player{min-height:36px!important;grid-template-columns:29px minmax(0,1fr)!important;gap:5px!important;padding:4px 16px 4px 4px!important;border-radius:8px!important}
+.fm-app .tactics-panel .pitch-player-ca{min-width:27px!important;height:26px!important;font-size:15px!important}
+.fm-app .tactics-panel .pitch-player-info b{font-size:10.5px!important;line-height:1.15!important}
+.fm-app .tactics-panel .pitch-player-info em{font-size:8px!important;line-height:1.1!important}
+.fm-app .tactics-panel .pitch-slot{width:clamp(112px,22%,142px)!important}
+@media(max-width:760px){.fm-app .tactics-panel .pitch-slot{width:clamp(100px,27%,124px)!important}.fm-app .tactics-panel .pitch-player{grid-template-columns:25px minmax(0,1fr)!important;min-height:33px!important;padding:3px 14px 3px 3px!important}.fm-app .tactics-panel .pitch-player-ca{min-width:24px!important;height:24px!important;font-size:14px!important}.fm-app .tactics-panel .pitch-player-info b{font-size:9px!important}}
