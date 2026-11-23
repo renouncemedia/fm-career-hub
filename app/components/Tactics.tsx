@@ -20,10 +20,10 @@ function category(pos:string):Category{
  if(parts.some(x=>/^(md|mdc|mcd|dm|dmc|defmid|mdef|mdm)$/.test(x)||x.includes("mediodefensivo")))return"MD";
  if(parts.some(x=>/^(mc|cm|m|mid|mcm|mec|mcl|mcr|centralmid)$/.test(x)||x.includes("mediocentro")))return"MC";
  if(parts.some(x=>/^(moc|amc|am|attmid|om|mo|mofc|mamc|mac)$/.test(x)||x.includes("medioofensivocentro")))return"MOC";
- if(parts.some(x=>/^(mod|amr|rw|mofd|avd|amrd|mar|mr|rightwing|rightmid)$/.test(x)||x.includes("medioofensivodireito")||x.includes("pontadireito")))return"MOD";
- if(parts.some(x=>/^(moe|aml|lw|mofe|ave|amle|mal|ml|leftwing|leftmid)$/.test(x)||x.includes("medioofensivoesquerdo")||x.includes("pontaesquerdo")))return"MOE";
- if(parts.some(x=>/^(pld|st|cf|av|f9|af|att|striker|stc|str)$/.test(x)))return"PLD";
- if(parts.some(x=>/^(ple|leftstriker|stl)$/.test(x)||x.includes("pontaesquerdo")))return"PLE";
+ if(parts.some(x=>/^(mod|amr|rw|mofd|avd|amrd|mar|mr|rightwing|rightmid)$/.test(x)||x.includes("medioofensivodireito")))return"MOD";
+ if(parts.some(x=>/^(moe|aml|lw|mofe|ave|amle|mal|ml|leftwing|leftmid)$/.test(x)||x.includes("medioofensivoesquerdo")))return"MOE";
+ if(parts.some(x=>/^(pld|pd|st|cf|av|f9|af|att|striker|stc|str)$/.test(x)||x.includes("pontadireito")))return"PLD";
+ if(parts.some(x=>/^(ple|pe|leftstriker|stl)$/.test(x)||x.includes("pontaesquerdo")))return"PLE";
  return"MC";
 }
 function preferred(p:P,F:Slot[]){
