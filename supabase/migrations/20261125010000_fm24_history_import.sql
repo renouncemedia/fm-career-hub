@@ -458,7 +458,7 @@ begin
    'seasonsCreated',v_created_seasons,'matchesCreated',v_matches_created,
    'matchesUpdated',v_matches_updated,'transfersCreated',v_transfers_created,
    'seasonStatsCreated',v_stats_created,'seasonStatsUpdated',v_stats_updated,
-   'trophiesCreated',v_trophies_created,'matchStatsCreated',v_match_stats_created,'matchStatsUpdated',v_match_stats_updated,'managerSpellsCreated',v_manager_spells_created
+   'trophiesCreated',v_trophies_created,'matchStatsCreated',v_match_stats_created,'matchStatsUpdated',v_match_stats_updated,'playerClubHistoryCreated',v_player_club_history_created,'managerSpellsCreated',v_manager_spells_created
   )
  )
  where j.id=(select x.id from public.import_jobs x where x.owner_id=v_owner and x.career_id=p_career_id
@@ -470,7 +470,7 @@ begin
   'seasons_created',v_created_seasons,'matches_created',v_matches_created,
   'matches_updated',v_matches_updated,'transfers_created',v_transfers_created,
   'season_stats_created',v_stats_created,'season_stats_updated',v_stats_updated,
-  'trophies_created',v_trophies_created,'match_stats_created',v_match_stats_created,'match_stats_updated',v_match_stats_updated,'manager_spells_created',v_manager_spells_created
+  'trophies_created',v_trophies_created,'match_stats_created',v_match_stats_created,'match_stats_updated',v_match_stats_updated,'player_club_history_created',v_player_club_history_created,'manager_spells_created',v_manager_spells_created
  ));
 end;
 $$;
