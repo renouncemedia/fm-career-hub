@@ -67,91 +67,102 @@ export default function SaveImport({db,career,session,onDone}:Props){
   setBusy(false);
  }
  async function apply(){
-  if(!preview)return;
+  if(!preview||!db||!career||!session?.user)return;
   setBusy(true);setError("");setDone("");setProgress(0);
-  let created=0,updated=0,skipped=0;
   try{
    const {data:people,error:peopleError}=await db.from("players").select("id,full_name,external_ids").eq("owner_id",session.user.id);
    if(peopleError)throw peopleError;
    const {data:links,error:linkError}=await db.from("career_players").select("id,player_id").eq("career_id",career.id);
    if(linkError)throw linkError;
    const byFmId=new Map<number,any>(),byName=new Map<string,any[]>();
-   for(const p of people||[]){
-    const id=Number(p.external_ids?.fm24?.id);if(Number.isFinite(id)&&p.external_ids?.fm24?.id!==undefined)byFmId.set(id,p);
-    const k=normalise(p.full_name||"");if(k){const a=byName.get(k)||[];a.push(p);byName.set(k,a);}
+   for(const person of people||[]){
+    const id=Number(person.external_ids?.fm24?.id);
+    if(Number.isFinite(id)&&person.external_ids?.fm24?.id!==undefined)byFmId.set(id,person);
+    const k=normalise(person.full_name||"");
+    if(k){const a=byName.get(k)||[];a.push(person);byName.set(k,a);}
    }
    const linkByPlayer=new Map((links||[]).map((x:any)=>[x.player_id,x.id]));
-   let importedSeasonId:string|null=null;
+   let seasonPayload:any=null;
    if(preview.save.gameDate){
     const gameDate=new Date(preview.save.gameDate);
     if(Number.isFinite(gameDate.getTime())){
      const year=gameDate.getUTCFullYear(),month=gameDate.getUTCMonth()+1;
      const seasonStart=month>=7?year:year-1;
-     const seasonLabel=String(seasonStart)+"/"+String(seasonStart+1).slice(-2);
-     const found=await db.from("seasons").select("id,is_current").eq("career_id",career.id).eq("label",seasonLabel).maybeSingle();
-     if(found.error)throw found.error;
-     const current=await db.from("seasons").select("id").eq("career_id",career.id).eq("is_current",true).limit(1).maybeSingle();
-     if(current.error)throw current.error;
-     if(found.data){
-      importedSeasonId=found.data.id;
-      if(!current.data){const activate=await db.from("seasons").update({is_current:true}).eq("id",found.data.id);if(activate.error)throw activate.error;}
-     }else{
-      const createdSeason=await db.from("seasons").insert({owner_id:session.user.id,career_id:career.id,label:seasonLabel,start_date:String(seasonStart)+"-07-01",end_date:String(seasonStart+1)+"-06-30",is_current:!current.data,notes:"Criada automaticamente a partir da data do save FM24."}).select("id").single();
-      if(createdSeason.error)throw createdSeason.error;
-      importedSeasonId=createdSeason.data.id;
-     }
+     seasonPayload={label:String(seasonStart)+"/"+String(seasonStart+1).slice(-2),start_date:String(seasonStart)+"-07-01",end_date:String(seasonStart+1)+"-06-30",notes:"Criada automaticamente a partir da data do save FM24."};
     }
    }
-   const seen=new Set<string>();
+   const seen=new Set<string>(),rows:any[]=[];
+   let skipped=0,created=0,updated=0;
    const squadPlayers=preview.save.players.filter(p=>sameClub(p.club,String(career.club_name||""))||sameClub(p.contractClub,String(career.club_name||"")));
-   if(!squadPlayers.length){const detected=[...new Set(preview.save.players.map(p=>p.club).filter(Boolean))].slice(0,20).join(", ");throw new Error("Não encontrei correspondência para o clube da carreira ("+(career.club_name||"não definido")+"). Clubes detetados no save: "+(detected||"nenhum identificado")+". Nenhum jogador foi importado.");}
+   if(!squadPlayers.length){
+    const detected=[...new Set(preview.save.players.map(p=>p.club).filter(Boolean))].slice(0,20).join(", ");
+    throw new Error("Não encontrei correspondência para o clube da carreira ("+(career.club_name||"não definido")+"). Clubes detetados no save: "+(detected||"nenhum identificado")+". Nenhum jogador foi importado.");
+   }
    for(let i=0;i<squadPlayers.length;i++){
     const p=squadPlayers[i],key=normalise(p.fullName||p.name),isLoanedOut=!!p.contractClub&&!!p.club&&!sameClub(p.contractClub,p.club);
     if(seen.has(String(p.id))){skipped++;continue;}seen.add(String(p.id));
     const candidates=byName.get(key)||[];
-    let existing=byFmId.get(p.id)|| (candidates.length===1?candidates[0]:null);
+    const existing=byFmId.get(p.id)||(candidates.length===1?candidates[0]:null);
     if(candidates.length>1&&!byFmId.has(p.id)){skipped++;continue;}
     const externalIds={...(existing?.external_ids||{}),fm24:{id:p.id,uid:p.uid,formatVersion:preview.save.formatVersion}};
-    let playerId:string;
+    const playerPatch:any=existing?{external_ids:externalIds,updated_at:new Date().toISOString()}:{
+     full_name:p.fullName||p.name,date_of_birth:p.birthDate,
+     nationality:(await import("../lib/fm24-save-parser")).NATIONS[String(p.nationId)]||null,
+     positions:p.positions,external_ids:externalIds
+    };
     if(existing){
-     playerId=existing.id;
-     const playerPatch:any={external_ids:externalIds,updated_at:new Date().toISOString()};
      if(fields.includes("name"))playerPatch.full_name=p.fullName||p.name;
      if(fields.includes("birthDate"))playerPatch.date_of_birth=p.birthDate;
      if(fields.includes("nationality"))playerPatch.nationality=(await import("../lib/fm24-save-parser")).NATIONS[String(p.nationId)]||null;
      if(fields.includes("positions"))playerPatch.positions=p.positions;
-     const u=await db.from("players").update(playerPatch).eq("id",playerId);
-     if(u.error)throw u.error;
-     const linkId=linkByPlayer.get(playerId);
-     if(linkId){
-      const careerPatch:any={updated_at:new Date().toISOString()};
-      if(fields.includes("ca"))careerPatch.ca=p.ca;
-      if(fields.includes("pa"))careerPatch.pa=p.pa;
-      if(fields.includes("caNovo")&&p.pa>=minPAForCaNovo)careerPatch.ca_novo=p.ca;
-      if(fields.includes("age"))careerPatch.age=p.age;
-      if(fields.includes("club"))careerPatch.club_name=p.club||null;
-      careerPatch.squad_status=isLoanedOut?"Emprestado":"Plantel principal";
-      if(fields.includes("positions"))careerPatch.position=p.positions.join(", ");
-      const l=await db.from("career_players").update(careerPatch).eq("id",linkId);
-      if(l.error)throw l.error;
-     }else{
-      const l=await db.from("career_players").insert({owner_id:session.user.id,career_id:career.id,player_id:playerId,squad_status:isLoanedOut?"Emprestado":"Plantel principal",club_name:fields.includes("club")?p.club||null:career.club_name,position:fields.includes("positions")?p.positions.join(", "):null,ca:fields.includes("ca")?p.ca:null,ca_novo:fields.includes("caNovo")&&p.pa>=minPAForCaNovo?p.ca:null,pa:fields.includes("pa")?p.pa:null,age:fields.includes("age")?p.age:null});
-      if(l.error)throw l.error;
-     }
-     updated++;
-    }else{
-     const ins=await db.from("players").insert({owner_id:session.user.id,full_name:p.fullName||p.name,date_of_birth:p.birthDate,nationality:(await import("../lib/fm24-save-parser")).NATIONS[String(p.nationId)]||null,positions:p.positions,external_ids:externalIds}).select("id").single();
-     if(ins.error)throw ins.error;playerId=ins.data.id;
-     const l=await db.from("career_players").insert({owner_id:session.user.id,career_id:career.id,player_id:playerId,squad_status:isLoanedOut?"Emprestado":"Plantel principal",club_name:p.club||null,position:p.positions.join(", "),ca:p.ca,ca_novo:fields.includes("caNovo")&&p.pa>=minPAForCaNovo?p.ca:null,pa:p.pa,age:p.age});
-     if(l.error)throw l.error;created++;
     }
-    const snap=await db.from("player_attribute_snapshots").insert({owner_id:session.user.id,career_id:career.id,player_id:playerId,season_id:importedSeasonId,ca:p.ca,pa:p.pa,attributes:{...p.attributes,positionRatings:p.positionRatings,rawAttributes:p.rawAttributes,gameDate:preview.save.gameDate,formatVersion:preview.save.formatVersion},source:"Save FM24"});
-    if(snap.error)throw snap.error;
-    if(i%10===0){setProgress(Math.round((i+1)/squadPlayers.length*100));setMessage("A guardar jogadores e snapshots...");}
+    const linkId=existing?linkByPlayer.get(existing.id):null;
+    const careerPatch:any=existing?{updated_at:new Date().toISOString(),squad_status:isLoanedOut?"Emprestado":"Plantel principal"}:{
+     squad_status:isLoanedOut?"Emprestado":"Plantel principal",
+     club_name:p.club||null,position:p.positions.join(", "),ca:p.ca,
+     ca_novo:fields.includes("caNovo")&&p.pa>=minPAForCaNovo?p.ca:null,
+     pa:p.pa,age:p.age
+    };
+    if(existing){
+     if(fields.includes("ca"))careerPatch.ca=p.ca;
+     if(fields.includes("pa"))careerPatch.pa=p.pa;
+     if(fields.includes("caNovo")&&p.pa>=minPAForCaNovo)careerPatch.ca_novo=p.ca;
+     if(fields.includes("age"))careerPatch.age=p.age;
+     if(fields.includes("club"))careerPatch.club_name=p.club||null;
+     if(fields.includes("positions"))careerPatch.position=p.positions.join(", ");
+    }
+    rows.push({
+     player_id:existing?.id||null,
+     link_id:linkId||null,
+     player_patch:playerPatch,
+     career_patch:careerPatch,
+     snapshot:{
+      ca:p.ca,pa:p.pa,
+      attributes:{...p.attributes,positionRatings:p.positionRatings,rawAttributes:p.rawAttributes,gameDate:preview.save.gameDate,formatVersion:preview.save.formatVersion},
+      source:"Save FM24"
+     }
+    });
+    if(existing)updated++;else created++;
+    if(i%10===0){setProgress(Math.round((i+1)/squadPlayers.length*100));setMessage("A preparar importação transacional...");}
    }
-   const log=await db.from("import_jobs").insert({owner_id:session.user.id,career_id:career.id,source_format:"fm24-save",file_name:preview.fileName,status:"completed",records_total:preview.save.players.length,records_created:created,records_updated:updated,records_skipped:skipped,report:{gameDate:preview.save.gameDate,formatVersion:preview.save.formatVersion,saveName:preview.save.name,warnings:preview.save.warnings},completed_at:new Date().toISOString()});
-   if(log.error)throw log.error;
-   setDone("Importação concluída: "+created+" novos, "+updated+" atualizados, "+skipped+" ignorados.");
+   if(!rows.length)throw new Error("Não existem jogadores válidos para importar.");
+   setMessage("A guardar todos os registos numa única transação...");
+   const result=await db.rpc("apply_fm24_save_import",{
+    p_career_id:career.id,
+    p_season:seasonPayload,
+    p_players:rows,
+    p_job:{
+     file_name:preview.fileName,
+     records_total:preview.save.players.length,
+     records_created:created,
+     records_updated:updated,
+     records_skipped:skipped,
+     report:{gameDate:preview.save.gameDate,formatVersion:preview.save.formatVersion,saveName:preview.save.name,warnings:preview.save.warnings}
+    }
+   });
+   if(result.error)throw result.error;
+   const summary=result.data||{};
+   setDone("Importação concluída: "+(summary.records_created??created)+" novos, "+(summary.records_updated??updated)+" atualizados, "+(summary.records_skipped??skipped)+" ignorados.");
    setPreview(null);await onDone();
   }catch(e:any){setError(e.message||"Erro ao guardar os dados importados.");}
   setBusy(false);
