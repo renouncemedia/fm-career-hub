@@ -1771,7 +1771,7 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const competitionType = name => {
     if(!name) return 'Competição';
     if(/amigável|friendly/i.test(name)) return 'Amigável';
-    if(/champions|europa league|conference league|uefa|continental/i.test(name)) return 'Continental';
+    if(/champions|europa league|conference league|uefa|continental|liga europa|liga conferência|liga dos campeões/i.test(name)) return 'Continental';
     if(/taça|copa|cup/i.test(name)) return 'Taça';
     if(/liga|league|divisão|division/i.test(name)) return 'Liga';
     return 'Competição';
