@@ -36,7 +36,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
   try{
    if(!file.name.toLowerCase().endsWith(".fm"))throw new Error("Seleciona um ficheiro de save com extensão .fm.");
    const bytes=new Uint8Array(await file.arrayBuffer());
-   const save=await parseSave(bytes,(p,m)=>{setProgress(Math.round(p));setMessage(m);},{clubName:career?.club_name||''});
+   const save=await parseSave(bytes,(p,m)=>{setProgress(Math.round(p));setMessage(m);},{clubName:career?.club_name||'',managerName:career?.name||''});
    const {data:people,error:peopleError}=await db.from("players").select("id,full_name,external_ids").eq("owner_id",session.user.id);
    if(peopleError)throw peopleError;
    const {data:links,error:linkError}=await db.from("career_players").select("id,player_id").eq("career_id",career.id);
