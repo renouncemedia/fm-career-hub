@@ -15,6 +15,8 @@ export type FM24History = {
   transfers:{personId:number;date:string;kind:number;type:string;fromClubId:number|null;toClubId:number|null;fee:number;addOns:number;originalFee:number;originalFeeWithAddOns:number}[];
   playerSeasonRecords:{personId:number;clubId:number;seasonStart:number;appearances:number;starts:number;substituteAppearances:number;minutes:number;goals:number;assists:number;playerOfMatch:number;goalsConceded:number;cleanSheets:number;yellowCards:number;redCards:number;ratedAppearances:number;ratingTotal:number;averageRating:number|null;teamIds:number[];kindBreakdown:Record<string,{appearances:number;goals:number;assists:number;minutes:number}>}[];
   trophies:{competitionUid:number;competitionKey:number;year:number;seasonStart:number;wonOn:string}[];
+  managerPersonId:number|null;
+  managerSpells:{personId:number;clubId:number;teamId:number;startedOn:string;endedOn:string;won:number;drawn:number;lost:number;reason:number;leagueWins:number;cupWins:number}[];
   warnings:string[];
 };
 export type FM24Save = { name:string; formatVersion:string; gameDate:string; players:FM24Player[]; clubs:FM24Club[]; teamClubMap:{teamId:number;clubId:number}[]; history:FM24History; warnings:string[] };
