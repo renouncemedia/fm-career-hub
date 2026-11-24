@@ -158,12 +158,12 @@ export default function SaveImport({db,career,session,onDone}:Props){
      records_created:created,
      records_updated:updated,
      records_skipped:skipped,
-     report:{gameDate:preview.save.gameDate,formatVersion:preview.save.formatVersion,saveName:preview.save.name,warnings:preview.save.warnings,history:{matches:preview.save.history.matches.length,transfers:preview.save.history.transfers.length,seasons:preview.save.history.seasons.length,competitions:preview.save.history.competitions.length,playerSeasonRecords:preview.save.history.playerSeasonRecords.length,trophies:preview.save.history.trophies.length}}
+     report:{gameDate:preview.save.gameDate,formatVersion:preview.save.formatVersion,saveName:preview.save.name,warnings:preview.save.warnings,history:{matches:preview.save.history.matches.length,transfers:preview.save.history.transfers.length,seasons:preview.save.history.seasons.length,competitions:preview.save.history.competitions.length,playerSeasonRecords:preview.save.history.playerSeasonRecords.length,playerMatchStats:preview.save.history.playerMatchStats.length,trophies:preview.save.history.trophies.length}}
     }
    });
    if(result.error)throw result.error;
    const summary=result.data||{};
-   const history=summary.history||{};setDone("Save importado: "+(summary.records_created??created)+" jogadores novos, "+(summary.records_updated??updated)+" atualizados; "+(history.matches_created??0)+" jogos, "+(history.transfers_created??0)+" transferências, "+(history.season_stats_created??0)+" registos estatísticos, "+(history.trophies_created??0)+" troféus e "+(history.manager_spells_created??0)+" passagens do treinador.");
+   const history=summary.history||{};setDone("Save importado: "+(summary.records_created??created)+" jogadores novos, "+(summary.records_updated??updated)+" atualizados; "+(history.matches_created??0)+" jogos, "+(history.transfers_created??0)+" transferências, "+(history.season_stats_created??0)+" registos estatísticos por época, "+(history.match_stats_created??0)+" estatísticas de jogo, "+(history.trophies_created??0)+" troféus e "+(history.manager_spells_created??0)+" passagens do treinador.");
    setPreview(null);await onDone();
   }catch(e:any){setError(e.message||"Erro ao guardar os dados importados.");}
   setBusy(false);
