@@ -1163,12 +1163,330 @@ function displayAttribute(raw) { return Math.max(1, Math.min(20, Math.round(raw 
 function tick() { return new Promise((r) => setTimeout(r, 0)); }
 const SCAN_CHUNK = 8_000_000;
 
+
+/* ---------- histórico de carreira, competições e dados ---------- */
+const ZSTD_MAGIC = [0x28, 0xb5, 0x2f, 0xfd];
+function findMagic(bytes, from = 0) {
+  for (let i = Math.max(0, from); i + 4 <= bytes.length; i++) {
+    if (bytes[i] === 0x28 && bytes[i + 1] === 0xb5 && bytes[i + 2] === 0x2f && bytes[i + 3] === 0xfd) return i;
+  }
+  return -1;
+}
+function zstdFrameEnd(bytes, start) {
+  if (start < 0 || start + 6 > bytes.length || findMagic(bytes, start) !== start) throw new Error('Frame Zstandard inválida.');
+  const flags = bytes[start + 4];
+  if (flags & 8) throw new Error('Cabeçalho Zstandard inválido.');
+  const single = (flags >> 5) & 1, checksum = (flags >> 2) & 1, dictFlag = flags & 3, contentFlag = flags >> 6;
+  let p = start + 5;
+  if (!single) p++;
+  p += dictFlag === 3 ? 4 : dictFlag;
+  p += contentFlag ? (1 << contentFlag) : (single ? 1 : 0);
+  while (true) {
+    if (p + 3 > bytes.length) throw new Error('Frame Zstandard incompleta.');
+    const header = bytes[p] | (bytes[p + 1] << 8) | (bytes[p + 2] << 16);
+    p += 3;
+    const last = header & 1, type = (header >> 1) & 3, size = header >>> 3;
+    if (type === 3) throw new Error('Bloco Zstandard inválido.');
+    p += type === 1 ? 1 : size;
+    if (p > bytes.length) throw new Error('Bloco Zstandard truncado.');
+    if (last) break;
+  }
+  p += checksum ? 4 : 0;
+  if (p > bytes.length) throw new Error('Checksum Zstandard truncado.');
+  return p;
+}
+function forEachInnerBlock(bytes, callback) {
+  let p = findMagic(bytes);
+  while (p >= 0) {
+    try {
+      const end = zstdFrameEnd(bytes, p);
+      const block = Zstd.decompress(bytes.subarray(p, end));
+      callback(block);
+      p = findMagic(bytes, end);
+    } catch {
+      p = findMagic(bytes, p + 4);
+    }
+  }
+}
+function concatBytes(parts) {
+  const size = parts.reduce((sum, part) => sum + part.length, 0);
+  const out = new Uint8Array(size);
+  let offset = 0;
+  for (const part of parts) { out.set(part, offset); offset += part.length; }
+  return out;
+}
+function dateFromPacked(bytes, offset) {
+  if (offset < 0 || offset + 4 > bytes.length) return null;
+  const dv = dvOf(bytes), day = dv.getUint16(offset, true) & 511, year = dv.getUint16(offset + 2, true);
+  if (day < 1 || day > 366 || year < 1900 || year > 2200) return null;
+  try {
+    const date = new Date(Date.UTC(year, 0, day));
+    return date.getUTCFullYear() === year ? date.toISOString().slice(0, 10) : null;
+  } catch { return null; }
+}
+function seasonStartOf(date) {
+  const year = Number(date.slice(0, 4)), month = Number(date.slice(5, 7));
+  return month >= 7 ? year : year - 1;
+}
+function readCompetitionKeys(gameDb) {
+  const keys = new Map();
+  for (let p = 0; p + 24 <= gameDb.length; p++) {
+    if ((gameDb[p] !== 7 && gameDb[p] !== 8) || (gameDb[p + 4] !== 7 && gameDb[p + 4] !== 8) ||
+        gameDb[p + 5] !== 0 || gameDb[p + 7] !== 255 || gameDb[p + 20] !== 0 ||
+        gameDb[p + 23] !== 1) continue;
+    const second = gameDb[p + 21] === 0 && gameDb[p + 22] === 0;
+    const third = gameDb[p + 21] === 255 && gameDb[p + 22] === 255;
+    if (!second && !third) continue;
+    const key = dvOf(gameDb).getUint32(p + 8, true);
+    const uid = dvOf(gameDb).getUint32(p + 12, true);
+    if (uid === dvOf(gameDb).getUint32(p + 16, true) && key < 100000 && uid > 0) keys.set(key, uid);
+  }
+  return keys;
+}
+function readCompetitionStages(gameDb, keys) {
+  const found = [], dv = dvOf(gameDb);
+  for (let p = 0; p + 17 <= gameDb.length; p++) {
+    const index = dv.getUint32(p, true);
+    if (dv.getUint32(p + 4, true) !== index + 1 || dv.getUint32(p + 8, true) !== index + 1 || gameDb[p + 12] !== 0) continue;
+    const key = dv.getUint32(p + 13, true);
+    if (key < 100000 && keys.has(key)) found.push({ position: p, number: index + 1, key });
+  }
+  if (!found.length) return new Map();
+  const rows = found.filter((row, i) =>
+    (i > 0 && row.position - found[i - 1].position <= 100) ||
+    (i + 1 < found.length && found[i + 1].position - row.position <= 100)
+  );
+  if (!rows.length) return new Map();
+  const middle = rows.map(row => row.position).sort((a, b) => a - b)[Math.floor(rows.length / 2)];
+  const stages = new Map(), nearest = new Map();
+  for (const row of rows) {
+    const distance = Math.abs(row.position - middle);
+    if (!nearest.has(row.number) || distance < nearest.get(row.number)) {
+      stages.set(row.number, keys.get(row.key));
+      nearest.set(row.number, distance);
+    }
+  }
+  return stages;
+}
+function resultBefore(bytes, header) {
+  const dv = dvOf(bytes);
+  for (let count = 0; count <= 80; count++) {
+    const start = header - 30 - 8 * count;
+    if (start < 0 || bytes[start] !== 1 || bytes[start + 1] !== 0x18 || dv.getUint32(start + 26, true) !== count) continue;
+    const home = bytes.subarray(start + 6, start + 10), away = bytes.subarray(start + 10, start + 14);
+    const validScore = row => row[0] !== 255 && row.every(value => value === 255 || value < 100);
+    if (!validScore(home) || !validScore(away)) continue;
+    return { homeScore: home[0], awayScore: away[0], attendance: dv.getUint32(start + 14, true) };
+  }
+  return null;
+}
+function parseFixtureChunk(bytes, baseOffset, targetClubId, teamClubMap, stageMap, found) {
+  const dv = dvOf(bytes);
+  for (let p = 0; p + 40 <= bytes.length; p++) {
+    if (bytes[p] !== 0x18) continue;
+    const regular = bytes[p + 16] === 255 && bytes[p + 23] === 255;
+    const alt = bytes.subarray(p + 33, p + 38).length === 5 && bytes[p + 33] === 255 &&
+      bytes[p + 34] === 255 && bytes[p + 35] === 255 && bytes[p + 36] === 255 && bytes[p + 37] === 255 &&
+      Math.abs(dv.getUint16(p + 38, true) - dv.getUint16(p + 27, true)) <= 1;
+    if (!regular && !alt) continue;
+    const date = dateFromPacked(bytes, p + 25);
+    if (!date) continue;
+    const stageId = dv.getUint32(p + 1, true), fixtureId = dv.getUint32(p + 5, true);
+    const homeTeam = dv.getUint32(p + 12, true), awayTeam = dv.getUint32(p + 19, true);
+    if (homeTeam >= 500000 || awayTeam >= 500000) continue;
+    const homeClubId = teamClubMap.get(homeTeam) ?? null, awayClubId = teamClubMap.get(awayTeam) ?? null;
+    if (homeClubId !== targetClubId && awayClubId !== targetClubId) continue;
+    const key = fixtureId + '|' + date + '|' + homeTeam + '|' + awayTeam;
+    if (found.has(key)) continue;
+    found.add(key);
+    const result = resultBefore(bytes, p);
+    const competitionUid = stageMap.get(stageId) ?? null;
+    found.rows.push({
+      fixtureId, stageId, competitionUid, date, seasonStart: seasonStartOf(date),
+      homeTeam, awayTeam, homeClubId, awayClubId,
+      homeScore: result?.homeScore ?? null, awayScore: result?.awayScore ?? null,
+      attendance: result?.attendance ?? null
+    });
+  }
+}
+function parseFixtures(archive, targetClubId, teamClubMap, stageMap, onProgress) {
+  const raw = archive.member('rgman/fix_man.dat');
+  const first = findMagic(raw);
+  if (first < 0) return [];
+  const found = new Set(); found.rows = [];
+  let offset = 0, tail = new Uint8Array(0);
+  const prefix = raw.subarray(0, first);
+  parseFixtureChunk(prefix, 0, targetClubId, teamClubMap, stageMap, found);
+  tail = prefix.subarray(Math.max(0, prefix.length - 700)).slice();
+  offset = first;
+  let blockNumber = 0;
+  forEachInnerBlock(raw, block => {
+    const combined = concatBytes([tail, block]);
+    parseFixtureChunk(combined, offset - tail.length, targetClubId, teamClubMap, stageMap, found);
+    tail = combined.subarray(Math.max(0, combined.length - 700)).slice();
+    offset += block.length;
+    blockNumber++;
+    if (blockNumber % 100 === 0) onProgress?.(86 + Math.min(4, blockNumber / 1827 * 4), 'A ler jogos e resultados da carreira…');
+  });
+  return found.rows.sort((a, b) => a.date.localeCompare(b.date));
+}
+function parseTransfers(archive, people, targetClubId, teamClubMap, onProgress) {
+  const raw = archive.member('transfer_man.dat'), first = findMagic(raw);
+  if (first < 0) return [];
+  const careerIds = new Set(people.filter(p => p.clubId === targetClubId || p.contractClubId === targetClubId).map(p => p.id));
+  if (!careerIds.size) return [];
+  const parts = [raw.subarray(0, first)];
+  let count = 0;
+  forEachInnerBlock(raw, block => { parts.push(block); count++; });
+  const stream = concatBytes(parts), dv = dvOf(stream), result = [], seen = new Set();
+  const kinds = {1:'Transferência',2:'Troca',3:'Empréstimo',4:'Transferência livre',6:'Compensação',7:'Agente livre',8:'Troca',9:'Dispensa',14:'Formação'};
+  for (let p = 0; p + 37 <= stream.length; p++) {
+    if (stream[p] !== 6 || stream[p + 5] !== 0 || stream[p + 10] !== 0 || stream[p + 15] !== 0) continue;
+    const personId = dv.getUint32(p + 1, true);
+    if (!careerIds.has(personId)) continue;
+    const toTeam = dv.getUint32(p + 6, true), fromTeam = dv.getUint32(p + 11, true), squad = dv.getUint32(p + 16, true);
+    if ([toTeam, fromTeam, squad].some(team => team !== 0xffffffff && team >= 500000)) continue;
+    const date = dateFromPacked(stream, p + 33);
+    if (!date || stream[p + 32] > 15) continue;
+    const kind = stream[p + 32], fee = dv.getUint32(p + 20, true), feeWithAddOns = dv.getUint32(p + 28, true);
+    const fromClubId = fromTeam === 0xffffffff ? null : (teamClubMap.get(fromTeam) ?? null);
+    const toClubId = toTeam === 0xffffffff ? null : (teamClubMap.get(toTeam) ?? null);
+    const dedupe = [personId,date,kind,fromClubId,toClubId,fee,feeWithAddOns].join('|');
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+    result.push({
+      personId, date, kind, type:kinds[kind] || 'Outra operação',
+      fromClubId, toClubId, fee:Math.round(fee * 1.166),
+      addOns:Math.round(Math.max(0, feeWithAddOns - fee) * 1.166),
+      originalFee:fee, originalFeeWithAddOns:feeWithAddOns
+    });
+  }
+  onProgress?.(91, 'A ler transferências dos jogadores da carreira…');
+  return result.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function readStatGroups(ls) {
+  if (!ls || ls.length < 12) return [];
+  const count = Math.floor((ls.length - 8) / 4), values = new Int32Array(count);
+  const dv = dvOf(ls);
+  for (let i = 0; i < count; i++) values[i] = dv.getInt32(8 + i * 4, true);
+  const ungrouped = values[0], groupIndex = 1 + ungrouped;
+  if (ungrouped < 0 || groupIndex >= values.length) return [];
+  const groupsCount = values[groupIndex];
+  if (groupsCount < 0 || groupsCount > 200000) return [];
+  let index = groupIndex + 1;
+  const groups = [];
+  for (let g = 0; g < groupsCount; g++) {
+    if (index >= values.length) return [];
+    const n = values[index++];
+    if (n < 0 || n > 1000 || index + n > values.length) return [];
+    const stored = Array.from(values.subarray(index, index + n));
+    groups.push(stored.map((value, k) => k === 0 ? value : value + stored[k - 1]));
+    index += n;
+  }
+  return groups;
+}
+function parsePlayerSeasonStats(archive, people, targetClubId, teamClubMap, onProgress) {
+  const dt = archive.member('player_stats_hist_dt.cmt');
+  const ls = archive.member('rgman/player_stats_hist_ls.dat');
+  const groups = readStatGroups(ls), counts = new Map();
+  for (const p of people) {
+    if (p.clubId !== targetClubId && p.contractClubId !== targetClubId) continue;
+    if (Number.isInteger(p.statsGroup) && p.statsGroup >= 0 && p.statsGroup < groups.length)
+      counts.set(p.statsGroup, (counts.get(p.statsGroup) || 0) + 1);
+  }
+  const owners = new Map();
+  for (const p of people) {
+    if (p.clubId !== targetClubId && p.contractClubId !== targetClubId) continue;
+    if (Number.isInteger(p.statsGroup) && counts.get(p.statsGroup) === 1) owners.set(p.statsGroup, p);
+  }
+  const dv = dvOf(dt), out = [], kindNames = ['Amigável','Liga','Taça','Continental','Seleção'];
+  for (const [group, player] of owners) {
+    for (const offset of groups[group]) {
+      const at = 8 + offset;
+      if (offset < 0 || offset % 152 !== 0 || at + 152 > dt.length) continue;
+      const teamId = dv.getUint32(at + 1, true), clubId = teamClubMap.get(teamId);
+      if (clubId !== targetClubId) continue;
+      const leagueKey = dv.getUint16(at + 5, true), seasonStart = dv.getUint16(at + 11, true);
+      const ratingTotal = dv.getUint16(at + 13, true), minutes = dv.getUint16(at + 15, true);
+      const starts = dt[at + 24], substituteAppearances = dt[at + 25], ratedAppearances = dt[at + 26];
+      const kind = dt[at + 31];
+      if (seasonStart < 1900 || seasonStart > 2200 || kind > 4) continue;
+      out.push({
+        personId:player.id, teamId, clubId, seasonStart, leagueKey, kind, kindName:kindNames[kind],
+        appearances:starts + substituteAppearances, starts, substituteAppearances, minutes,
+        goals:dt[at + 27], assists:dt[at + 28], playerOfMatch:dt[at + 29],
+        goalsConceded:dt[at + 17], cleanSheets:dt[at + 22], yellowCards:dt[at + 21], redCards:dt[at + 20],
+        averageRating:ratedAppearances ? Math.round((ratingTotal / ratedAppearances / 10) * 100) / 100 : null,
+        ratedAppearances, ratingTotal
+      });
+    }
+  }
+  onProgress?.(94, 'A ler estatísticas por época…');
+  return out;
+}
+function parseTrophies(archive, targetClubId, teamClubMap, competitionKeys) {
+  const dt = archive.member('comp_history_dt.cmt'), dv = dvOf(dt), out = [], seen = new Set();
+  for (let p = 8; p + 55 <= dt.length; p += 55) {
+    const key = dv.getUint32(p, true), year = dv.getUint16(p + 4, true), start = dv.getUint16(p + 6, true);
+    const winnerTeam = dv.getUint32(p + 8, true), clubId = teamClubMap.get(winnerTeam);
+    if (clubId !== targetClubId) continue;
+    const wonOn = dateFromPacked(dt, p + 51);
+    if (!wonOn) continue;
+    const competitionUid = competitionKeys.get(key) ?? key;
+    const dedupe = key + '|' + year + '|' + wonOn;
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+    out.push({competitionUid, competitionKey:key, year, seasonStart:start || (year - 1), wonOn});
+  }
+  return out.sort((a,b)=>a.wonOn.localeCompare(b.wonOn));
+}
+function buildHistory(archive, gameDb, people, clubs, teams, gameDate, clubName, onProgress) {
+  const normalise = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const target = normalise(clubName);
+  const managedClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target ||
+    (target === 'sporting' && normalise(c.shortName).startsWith('sporting')));
+  if (!managedClub) return {managedClubId:null,clubs:[],competitions:[],seasons:[],matches:[],transfers:[],playerSeasonRecords:[],trophies:[],warnings:['Não foi possível associar o clube da carreira aos clubes do save; o histórico não foi importado.']};
+  const teamClubMap = new Map(teams.filter(t=>t.club!==null).map(t=>[t.ordinal+1,t.club]));
+  const competitionKeys = readCompetitionKeys(gameDb), stageMap = readCompetitionStages(gameDb, competitionKeys);
+  onProgress?.(84, 'A preparar o histórico da carreira…');
+  const matches = parseFixtures(archive, managedClub.id, teamClubMap, stageMap, onProgress);
+  const transfers = parseTransfers(archive, people, managedClub.id, teamClubMap, onProgress);
+  const playerSeasonRecords = parsePlayerSeasonStats(archive, people, managedClub.id, teamClubMap, onProgress);
+  const trophies = parseTrophies(archive, managedClub.id, teamClubMap, competitionKeys);
+  const competitionMap = new Map();
+  const addCompetition = (uid, rawId) => {
+    if (!uid) return;
+    if (!competitionMap.has(uid)) competitionMap.set(uid,{uid,name:'Competição FM24 '+uid,rawIds:[]});
+    if (rawId !== undefined && !competitionMap.get(uid).rawIds.includes(rawId)) competitionMap.get(uid).rawIds.push(rawId);
+  };
+  for (const match of matches) addCompetition(match.competitionUid || match.stageId, match.stageId);
+  for (const trophy of trophies) addCompetition(trophy.competitionUid, trophy.competitionKey);
+  for (const stat of playerSeasonRecords) addCompetition(competitionKeys.get(stat.leagueKey) || stat.leagueKey, stat.leagueKey);
+  const seasonStarts = new Set();
+  for (const match of matches) seasonStarts.add(match.seasonStart);
+  for (const stat of playerSeasonRecords) seasonStarts.add(stat.seasonStart);
+  for (const trophy of trophies) seasonStarts.add(trophy.seasonStart);
+  if (gameDate) seasonStarts.add(seasonStartOf(gameDate));
+  const seasons = [...seasonStarts].filter(y=>y>=1900&&y<=2200).sort((a,b)=>a-b).map(year=>({
+    label:year+'/'+String(year+1).slice(-2),startDate:year+'-07-01',endDate:(year+1)+'-06-30',
+    isCurrent:!!gameDate && seasonStartOf(gameDate)===year
+  }));
+  const clubIds = new Set([managedClub.id]);
+  for (const match of matches) { clubIds.add(match.homeClubId); clubIds.add(match.awayClubId); }
+  for (const transfer of transfers) { if(transfer.fromClubId!==null)clubIds.add(transfer.fromClubId);if(transfer.toClubId!==null)clubIds.add(transfer.toClubId); }
+  const clubMap = new Map(clubs.map(c=>[c.id,c]));
+  const historyClubs = [...clubIds].filter(id=>id!==null&&clubMap.has(id)).map(id=>{
+    const c=clubMap.get(id);return {fm24ClubId:c.id,name:c.name,shortName:c.shortName,country:NATIONS[String(c.nation)]||null};
+  });
+  return {managedClubId:managedClub.id,clubs:historyClubs,competitions:[...competitionMap.values()],seasons,matches,transfers,playerSeasonRecords,trophies,warnings:[]};
+}
+
 /* ---------- orquestrador: parseSave ---------- */
 function dateOf(year, day) {
   const date = new Date(Date.UTC(year, 0, day));
   return date.toISOString().slice(0, 10);
 }
-async function parseSave(rawBytes, onProgress = () => {}) {
+async function parseSave(rawBytes, onProgress = () => {}, options = {}) {
   onProgress(2, 'A ler índice do save…'); await tick();
   const a = new SaveArchive(rawBytes);
   const info = a.member('game_info.dat');
@@ -1241,16 +1559,20 @@ async function parseSave(rawBytes, onProgress = () => {}) {
       positions: POSITIONS.filter((_, i) => ab.positions[i] >= 15),
       positionRatings: ab.positions,
       attributes, rawAttributes: raw,
+      statsGroup: p.end >= 40 ? dv.getUint32(p.end - 40, true) : null,
     };
   });
   if (!players.length) throw new SaveError('NO_PLAYERS', 'Não foram encontrados registos de jogadores suportados neste save.');
   if (new Set(players.map((p) => p.id)).size !== players.length)
     throw new SaveError('AMBIGUOUS_IDENTITIES', 'As identidades dos jogadores não validaram.');
+  onProgress(82, 'A preparar dados históricos da carreira…'); await tick();
+  const teamClubMap = teams.filter((t) => t.club !== null).map((t) => ({ teamId: t.ordinal + 1, clubId: t.club }));
+  const history = buildHistory(a, b, players, clubs, teams, gameDate, options.clubName || '', onProgress);
   onProgress(96, 'A preparar a lista de jogadores…');
-  const warnings = [];
+  const warnings = [...history.warnings];
   if (ambiguous + unbound)
     warnings.push(`${ambiguous + unbound} registos ambíguos foram excluídos por segurança.`);
-  return { name: a.name, formatVersion, gameDate, players, clubs, warnings };
+  return { name: a.name, formatVersion, gameDate, players, clubs, teamClubMap, history, warnings };
 }
 
 /* ---------- mapa de nações (id -> nome) ---------- */
