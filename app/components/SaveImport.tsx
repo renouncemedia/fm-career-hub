@@ -28,6 +28,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
  const [done,setDone]=useState("");
  const [fields,setFields]=useState<string[]>(["name","birthDate","nationality","positions","ca","pa","age","club"]);
  const [minPAForCaNovo,setMinPAForCaNovo]=useState(150);
+ const [managerName,setManagerName]=useState("");
  const importFields=[["name","Nome"],["birthDate","Data de nascimento"],["nationality","Nacionalidade"],["positions","Posição"],["ca","CA"],["pa","PA / CA potencial"],["caNovo","CA Novo"],["age","Idade"],["club","Clube"]];
  const counts=useMemo(()=>preview?{total:preview.save.players.length,existing:preview.existing,fresh:preview.fresh,ambiguous:preview.ambiguous,unmatched:preview.unmatched,squad:preview.squad,loanedOut:preview.loanedOut,otherClubs:preview.otherClubs,noClub:preview.noClub}:null,[preview]);
  async function inspect(file?:File){
@@ -36,7 +37,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
   try{
    if(!file.name.toLowerCase().endsWith(".fm"))throw new Error("Seleciona um ficheiro de save com extensão .fm.");
    const bytes=new Uint8Array(await file.arrayBuffer());
-   const save=await parseSave(bytes,(p,m)=>{setProgress(Math.round(p));setMessage(m);},{clubName:career?.club_name||''});
+   const save=await parseSave(bytes,(p,m)=>{setProgress(Math.round(p));setMessage(m);},{clubName:career?.club_name||'',managerName:managerName.trim()});
    const {data:people,error:peopleError}=await db.from("players").select("id,full_name,external_ids").eq("owner_id",session.user.id);
    if(peopleError)throw peopleError;
    const {data:links,error:linkError}=await db.from("career_players").select("id,player_id").eq("career_id",career.id);
@@ -171,6 +172,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
  return <section className="panel" style={{marginBottom:20}}>
   <div className="panel-heading"><div><p className="eyebrow">IMPORTAÇÃO AVANÇADA</p><h2>Save Football Manager 2024</h2></div><span className="status-tag">FM24 · 24.3</span></div>
   <p className="intro">Lê o ficheiro .fm e importa o plantel, épocas, jogos, competições, troféus, transferências e estatísticas históricas associadas ao clube da carreira. O parser só valida saves no formato <b>24.3.0+0</b>.</p>
+  <label className="module-description" style={{display:"block",marginBottom:10}}>Nome exacto do treinador no save (opcional)<input type="text" value={managerName} onChange={e=>setManagerName(e.target.value)} placeholder="Necessário para importar o percurso do treinador" style={{display:"block",width:"100%",marginTop:6}}/></label>
   <input ref={input} type="file" accept=".fm" hidden onChange={e=>void inspect(e.target.files?.[0])}/>
   <div className="panel-actions"><button className="outline-btn" disabled={busy} onClick={()=>input.current?.click()}>{busy?"A analisar...":"Selecionar save .fm"}</button>{preview&&<button className="primary-btn" disabled={busy||fields.length===0} onClick={()=>void apply()}>Importar save completo</button>}</div>
   {preview&&<div className="import-field-picker"><h3>Escolhe o que atualizar nos jogadores existentes</h3><p className="module-description">Os campos desmarcados ficam exatamente como estão. Os jogadores novos recebem os dados disponíveis no ficheiro.</p><div className="form-grid">{importFields.map(([key,label])=><label key={key}><input type="checkbox" checked={fields.includes(key)} onChange={e=>setFields(old=>e.target.checked?[...old,key]:old.filter(x=>x!==key))}/> {label}</label>)}</div>{fields.includes("caNovo")&&<label className="ca-novo-threshold">Atualizar CA Novo apenas em jogadores com PA igual ou superior a <input type="number" min="0" max="200" value={minPAForCaNovo} onChange={e=>setMinPAForCaNovo(Number(e.target.value)||0)}/></label>}</div>}
