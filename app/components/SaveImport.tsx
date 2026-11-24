@@ -171,7 +171,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
  }
  return <section className="panel" style={{marginBottom:20}}>
   <div className="panel-heading"><div><p className="eyebrow">IMPORTAÇÃO AVANÇADA</p><h2>Save Football Manager 2024</h2></div><span className="status-tag">FM24 · 24.3</span></div>
-  <p className="intro">Lê o ficheiro .fm e importa o plantel, épocas, jogos, competições, troféus, transferências e estatísticas históricas associadas ao clube da carreira. O parser só valida saves no formato <b>24.3.0+0</b>.</p>
+  <p className="intro">Lê o ficheiro .fm e importa o plantel, épocas, jogos, competições, troféus, transferências, histórico de clubes e estatísticas individuais e de jogo. O parser só valida saves no formato <b>24.3.0+0</b>.</p>
   <label className="module-description" style={{display:"block",marginBottom:10}}>Nome exacto do treinador no save (opcional)<input type="text" value={managerName} onChange={e=>setManagerName(e.target.value)} placeholder="Necessário para importar o percurso do treinador" style={{display:"block",width:"100%",marginTop:6}}/></label>
   <input ref={input} type="file" accept=".fm" hidden onChange={e=>void inspect(e.target.files?.[0])}/>
   <div className="panel-actions"><button className="outline-btn" disabled={busy} onClick={()=>input.current?.click()}>{busy?"A analisar...":"Selecionar save .fm"}</button>{preview&&<button className="primary-btn" disabled={busy||fields.length===0} onClick={()=>void apply()}>Importar save completo</button>}</div>
