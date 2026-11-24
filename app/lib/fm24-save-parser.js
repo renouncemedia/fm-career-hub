@@ -1483,7 +1483,7 @@ function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId
       if (offset < 0 || offset % 31 !== 0 || at + 31 > dt.length) continue;
       const personId = dv.getUint32(at,true);
       const startedOn = dateFromPacked(dt,at+4);
-      const endedOn = dateFromPacked(dt,at+8) || gameDate;
+      const endedOn = dateFromPacked(dt,at+8);
       const won = dv.getUint16(at+20,true), drawn = dv.getUint16(at+22,true), lost = dv.getUint16(at+24,true);
       spells.push({personId,startedOn,endedOn,won,drawn,lost,reason:dt[at+26],leagueWins:dt[at+27],cupWins:dt[at+28]});
     }
@@ -1498,7 +1498,7 @@ function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId
         for (const match of matches) {
           if (match.homeTeam!==teamId&&match.awayTeam!==teamId) continue;
           if (match.homeScore===null || match.awayScore===null) continue;
-          if (match.date<spell.startedOn || match.date>spell.endedOn) continue;
+          if (match.date<spell.startedOn || match.date>(spell.endedOn || gameDate)) continue;
           const teamWon = match.homeTeam===teamId ? match.homeScore>match.awayScore : match.awayScore>match.homeScore;
           const level = match.homeScore===match.awayScore;
           if (level) draws++;
