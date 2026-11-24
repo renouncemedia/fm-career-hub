@@ -1,5 +1,7 @@
 -- Importa o histórico FM24 na mesma transação da importação do plantel.
 -- Não apaga nem substitui registos manuais; os registos importados são identificados pela origem FM24.
+alter table public.transfers add column if not exists currency text not null default 'EUR';
+
 create or replace function public.apply_fm24_full_save_import(
  p_career_id uuid,
  p_season jsonb,
@@ -314,13 +316,15 @@ begin
     and t.player_id=v_player_id and t.transfer_date=v_date and t.transfer_type=v_row->>'type'
     and t.from_club_id is not distinct from v_from_club_id and t.to_club_id is not distinct from v_to_club_id
     and t.fee is not distinct from nullif(v_row->>'fee','')::numeric
-    and t.add_ons is not distinct from nullif(v_row->>'addOns','')::numeric and t.source='Save FM24') then
+    and t.add_ons is not distinct from nullif(v_row->>'addOns','')::numeric
+    and t.currency=coalesce(v_row->>'currency','GBP') and t.source='Save FM24') then
    continue;
   end if;
   insert into public.transfers(owner_id,career_id,player_id,from_club_id,to_club_id,transfer_date,
-    transfer_type,fee,add_ons,notes,source)
+    transfer_type,fee,add_ons,currency,notes,source)
   values(v_owner,p_career_id,v_player_id,v_from_club_id,v_to_club_id,v_date,
     nullif(v_row->>'type',''),nullif(v_row->>'fee','')::numeric,nullif(v_row->>'addOns','')::numeric,
+    coalesce(v_row->>'currency','GBP'),
     'Valor original no save FM24: '||coalesce(v_row->>'originalFee','0')||
       ' / com variáveis: '||coalesce(v_row->>'originalFeeWithAddOns','0')||' GBP',
     'Save FM24');
