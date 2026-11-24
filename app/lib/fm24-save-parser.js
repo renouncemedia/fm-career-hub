@@ -1356,8 +1356,7 @@ function parseTransfers(archive, people, targetClubId, teamClubMap, onProgress) 
     seen.add(dedupe);
     result.push({
       personId, date, kind, type:kinds[kind] || 'Outra operação',
-      fromClubId, toClubId, fee:Math.round(fee * 1.166),
-      addOns:Math.round(Math.max(0, feeWithAddOns - fee) * 1.166),
+      fromClubId, toClubId, fee, addOns:Math.max(0, feeWithAddOns - fee), currency:'GBP',
       originalFee:fee, originalFeeWithAddOns:feeWithAddOns
     });
   }
