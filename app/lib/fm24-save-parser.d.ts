@@ -13,7 +13,7 @@ export type FM24History = {
   seasons:{label:string;startDate:string;endDate:string;isCurrent:boolean}[];
   matches:{fixtureId:number;stageId:number;competitionUid:number|null;date:string;seasonStart:number;homeTeam:number;awayTeam:number;homeClubId:number|null;awayClubId:number|null;homeScore:number|null;awayScore:number|null;attendance:number|null}[];
   transfers:{personId:number;date:string;kind:number;type:string;fromClubId:number|null;toClubId:number|null;fee:number;addOns:number;originalFee:number;originalFeeWithAddOns:number}[];
-  playerSeasonRecords:{personId:number;teamId:number;clubId:number;seasonStart:number;leagueKey:number;kind:number;kindName:string;appearances:number;starts:number;substituteAppearances:number;minutes:number;goals:number;assists:number;playerOfMatch:number;goalsConceded:number;cleanSheets:number;yellowCards:number;redCards:number;averageRating:number|null;ratedAppearances:number;ratingTotal:number}[];
+  playerSeasonRecords:{personId:number;clubId:number;seasonStart:number;appearances:number;starts:number;substituteAppearances:number;minutes:number;goals:number;assists:number;playerOfMatch:number;goalsConceded:number;cleanSheets:number;yellowCards:number;redCards:number;ratedAppearances:number;ratingTotal:number;averageRating:number|null;teamIds:number[];kindBreakdown:Record<string,{appearances:number;goals:number;assists:number;minutes:number}>}[];
   trophies:{competitionUid:number;competitionKey:number;year:number;seasonStart:number;wonOn:string}[];
   warnings:string[];
 };
