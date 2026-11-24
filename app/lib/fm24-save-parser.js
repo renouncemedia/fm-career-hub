@@ -1571,6 +1571,15 @@ function parseMatchReportAt(bytes, p, targetClubId, teamClubMap) {
   }
   if (!named) return null;
   const fixtureId=dvOf(head).getUint32(named.at-8,true);
+  const strings=[];
+  for(let q=0;q<named.at-4;q++){
+    const length=dvOf(head).getUint32(q,true);
+    if(length<3||length>100||q+4+length>named.at) continue;
+    const value=new TextDecoder().decode(head.subarray(q+4,q+4+length)).trim();
+    if(value && !value.includes('\uFFFD') && !/[\u0000-\u001f]/.test(value) && /[A-Za-zÀ-ÿ]/.test(value))
+      strings.push(value);
+  }
+  const competitionName=strings[0]||null,competitionShortName=strings[1]||null;
   const stadium=new TextDecoder().decode(head.subarray(named.at+4)).replace(/\0+$/,'').trim() || null;
   const partMarker=[2,homeTeam&255,(homeTeam>>>8)&255,(homeTeam>>>16)&255,(homeTeam>>>24)&255];
   const part=findByteSequence(bytes,partMarker,p+28,p+28+12000);
@@ -1587,7 +1596,7 @@ function parseMatchReportAt(bytes, p, targetClubId, teamClubMap) {
   const away=parseMatchSide(bytes,home.end,awayTeam,matchMinutes,playerOfTheMatch);
   if (!away) return null;
   const players=[...home.players,...away.players].filter(player=>teamClubMap.get(player.teamId)===targetClubId);
-  return {fixtureId,homeTeam,awayTeam,homeClubId,awayClubId,stadium,playerOfTheMatch,minutes:matchMinutes,players};
+  return {fixtureId,homeTeam,awayTeam,homeClubId,awayClubId,competitionName,competitionShortName,stadium,playerOfTheMatch,minutes:matchMinutes,players};
 }
 function parseMatchReports(archive, targetClubId, teamClubMap, onProgress) {
   const raw=archive.member('match_stats_cfg.dat'), reports=new Map();
