@@ -1497,7 +1497,7 @@ function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId
         let wins=0,draws=0,losses=0;
         for (const match of matches) {
           if (match.homeTeam!==teamId&&match.awayTeam!==teamId) continue;
-          if (!match.homeScore===null || match.homeScore===null || match.awayScore===null) continue;
+          if (match.homeScore===null || match.awayScore===null) continue;
           if (match.date<spell.startedOn || match.date>spell.endedOn) continue;
           const teamWon = match.homeTeam===teamId ? match.homeScore>match.awayScore : match.awayScore>match.homeScore;
           const level = match.homeScore===match.awayScore;
