@@ -1385,14 +1385,10 @@ function readStatGroups(ls) {
   }
   return groups;
 }
-function parsePlayerSeasonStats(archive, people, targetClubId, teamClubMap, onProgress) {
+function parsePlayerSeasonStats(archive, people, targetClubId, teamClubMap, globalGroupCounts, onProgress) {
   const dt = archive.member('player_stats_hist_dt.cmt');
   const ls = archive.member('rgman/player_stats_hist_ls.dat');
-  const groups = readStatGroups(ls), counts = new Map();
-  for (const p of people) {
-    if (Number.isInteger(p.statsGroup) && p.statsGroup >= 0 && p.statsGroup < groups.length)
-      counts.set(p.statsGroup, (counts.get(p.statsGroup) || 0) + 1);
-  }
+  const groups = readStatGroups(ls), counts = globalGroupCounts || new Map();
   const owners = new Map();
   for (const p of people) {
     if (p.clubId !== targetClubId && p.contractClubId !== targetClubId) continue;
@@ -1462,7 +1458,7 @@ function parseTrophies(archive, targetClubId, teamClubMap, competitionKeys) {
   }
   return out.sort((a,b)=>a.wonOn.localeCompare(b.wonOn));
 }
-function buildHistory(archive, gameDb, people, clubs, teams, gameDate, clubName, onProgress) {
+function buildHistory(archive, gameDb, people, clubs, teams, gameDate, clubName, globalGroupCounts, onProgress) {
   const normalise = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const target = normalise(clubName);
   const managedClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target ||
@@ -1473,7 +1469,7 @@ function buildHistory(archive, gameDb, people, clubs, teams, gameDate, clubName,
   onProgress?.(84, 'A preparar o histórico da carreira…');
   const matches = parseFixtures(archive, managedClub.id, teamClubMap, stageMap, onProgress);
   const transfers = parseTransfers(archive, people, managedClub.id, teamClubMap, onProgress);
-  const playerSeasonRecords = parsePlayerSeasonStats(archive, people, managedClub.id, teamClubMap, onProgress);
+  const playerSeasonRecords = parsePlayerSeasonStats(archive, people, managedClub.id, teamClubMap, globalGroupCounts, onProgress);
   const trophies = parseTrophies(archive, managedClub.id, teamClubMap, competitionKeys);
   const competitionMap = new Map();
   const addCompetition = (uid, rawId) => {
@@ -1589,7 +1585,14 @@ async function parseSave(rawBytes, onProgress = () => {}, options = {}) {
     throw new SaveError('AMBIGUOUS_IDENTITIES', 'As identidades dos jogadores não validaram.');
   onProgress(82, 'A preparar dados históricos da carreira…'); await tick();
   const teamClubMap = teams.filter((t) => t.club !== null).map((t) => ({ teamId: t.ordinal + 1, clubId: t.club }));
-  const history = buildHistory(a, b, players, clubs, teams, gameDate, options.clubName || '', onProgress);
+  const statsGroupCounts = new Map();
+  for (const person of people) {
+    if (person.end >= 40) {
+      const group = dv.getUint32(person.end - 40, true);
+      statsGroupCounts.set(group, (statsGroupCounts.get(group) || 0) + 1);
+    }
+  }
+  const history = buildHistory(a, b, players, clubs, teams, gameDate, options.clubName || '', statsGroupCounts, onProgress);
   onProgress(96, 'A preparar a lista de jogadores…');
   const warnings = [...history.warnings];
   if (ambiguous + unbound)
