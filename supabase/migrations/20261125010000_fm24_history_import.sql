@@ -45,6 +45,10 @@ declare
  v_stats_created integer := 0;
  v_stats_updated integer := 0;
  v_trophies_created integer := 0;
+ v_match_stats_created integer := 0;
+ v_match_stats_updated integer := 0;
+ v_match_id uuid;
+ v_match_notes text;
  v_manager_spells_created integer := 0;
  v_started_on date;
  v_ended_on date;
@@ -68,7 +72,8 @@ begin
     or jsonb_array_length(coalesce(p_history->'transfers','[]'::jsonb))>50000
     or jsonb_array_length(coalesce(p_history->'playerSeasonRecords','[]'::jsonb))>50000
     or jsonb_array_length(coalesce(p_history->'trophies','[]'::jsonb))>10000
-    or jsonb_array_length(coalesce(p_history->'managerSpells','[]'::jsonb))>1000 then
+    or jsonb_array_length(coalesce(p_history->'managerSpells','[]'::jsonb))>1000
+    or jsonb_array_length(coalesce(p_history->'playerMatchStats','[]'::jsonb))>100000 then
   raise exception 'O histórico do save excede os limites de importação.';
  end if;
 
@@ -224,17 +229,73 @@ begin
     home_score=nullif(v_row->>'homeScore','')::integer,
     away_score=nullif(v_row->>'awayScore','')::integer,
     attendance=nullif(v_row->>'attendance','')::integer,
+    venue=coalesce(nullif(v_row->>'stadium',''),m.venue),
     match_type='Jogo FM24'
    where m.career_id=p_career_id and m.owner_id=v_owner and m.source='Save FM24' and m.notes=v_notes;
    v_matches_updated := v_matches_updated+1;
   else
    insert into public.matches(owner_id,career_id,season_id,competition_id,played_at,
-    home_club_id,away_club_id,home_score,away_score,attendance,match_type,notes,source)
+    home_club_id,away_club_id,home_score,away_score,venue,attendance,match_type,notes,source)
    values(v_owner,p_career_id,v_season_id,v_competition_id,(v_date::timestamp at time zone 'UTC'),
     v_home_club_id,v_away_club_id,nullif(v_row->>'homeScore','')::integer,
-    nullif(v_row->>'awayScore','')::integer,nullif(v_row->>'attendance','')::integer,
-    'Jogo FM24',v_notes,'Save FM24');
+    nullif(v_row->>'awayScore','')::integer,nullif(v_row->>'stadium',''),
+    nullif(v_row->>'attendance','')::integer,'Jogo FM24',v_notes,'Save FM24');
    v_matches_created := v_matches_created+1;
+  end if;
+ end loop;
+
+ -- Estatísticas individuais dos relatórios detalhados de jogo.
+ for v_row in select value from jsonb_array_elements(coalesce(p_history->'playerMatchStats','[]'::jsonb))
+ loop
+  select p.id into v_player_id from public.players p
+   where p.owner_id=v_owner and p.external_ids->'fm24'->>'id'=v_row->>'personId'
+   limit 1;
+  if v_player_id is null then continue; end if;
+  v_match_notes := 'FM24 fixture='||coalesce(v_row->>'fixtureId','?')||
+    '; stage='||coalesce(v_row->>'stageId','?')||
+    '; homeTeam='||coalesce(v_row->>'homeTeam','?')||
+    '; awayTeam='||coalesce(v_row->>'awayTeam','?');
+  select m.id into v_match_id from public.matches m
+   where m.career_id=p_career_id and m.owner_id=v_owner and m.source='Save FM24' and m.notes=v_match_notes
+   limit 1;
+  if v_match_id is null then continue; end if;
+  v_club_id := nullif(v_club_ids->>coalesce(v_row->>'clubId',''),'')::uuid;
+  if exists(select 1 from public.player_match_stats s where s.match_id=v_match_id and s.player_id=v_player_id) then
+   update public.player_match_stats s set
+    club_id=coalesce(v_club_id,s.club_id),
+    started=nullif(v_row->>'started','')::boolean,
+    minutes_played=nullif(v_row->>'minutesPlayed','')::integer,
+    position=nullif(v_row->>'position',''),
+    rating=nullif(v_row->>'rating','')::numeric,
+    goals=coalesce(nullif(v_row->>'goals','')::integer,0),
+    assists=coalesce(nullif(v_row->>'assists','')::integer,0),
+    shots=nullif(v_row->>'shots','')::integer,
+    shots_on_target=nullif(v_row->>'shotsOnTarget','')::integer,
+    key_passes=nullif(v_row->>'keyPasses','')::integer,
+    tackles=nullif(v_row->>'tackles','')::integer,
+    interceptions=nullif(v_row->>'interceptions','')::integer,
+    passes_completed=nullif(v_row->>'passesCompleted','')::integer,
+    passes_attempted=nullif(v_row->>'passesAttempted','')::integer,
+    yellow_cards=coalesce(nullif(v_row->>'yellowCards','')::integer,0),
+    red_cards=coalesce(nullif(v_row->>'redCards','')::integer,0),
+    own_goals=coalesce(nullif(v_row->>'ownGoals','')::integer,0),
+    stats=coalesce(v_row->'stats','{}'::jsonb)||jsonb_build_object('playerOfTheMatch',coalesce((v_row->>'playerOfTheMatch')::boolean,false))
+   where s.match_id=v_match_id and s.player_id=v_player_id;
+   v_match_stats_updated:=v_match_stats_updated+1;
+  else
+   insert into public.player_match_stats(owner_id,match_id,player_id,club_id,started,minutes_played,position,rating,
+    goals,assists,shots,shots_on_target,key_passes,tackles,interceptions,passes_completed,passes_attempted,
+    yellow_cards,red_cards,own_goals,stats)
+   values(v_owner,v_match_id,v_player_id,v_club_id,nullif(v_row->>'started','')::boolean,
+    nullif(v_row->>'minutesPlayed','')::integer,nullif(v_row->>'position',''),nullif(v_row->>'rating','')::numeric,
+    coalesce(nullif(v_row->>'goals','')::integer,0),coalesce(nullif(v_row->>'assists','')::integer,0),
+    nullif(v_row->>'shots','')::integer,nullif(v_row->>'shotsOnTarget','')::integer,
+    nullif(v_row->>'keyPasses','')::integer,nullif(v_row->>'tackles','')::integer,
+    nullif(v_row->>'interceptions','')::integer,nullif(v_row->>'passesCompleted','')::integer,
+    nullif(v_row->>'passesAttempted','')::integer,coalesce(nullif(v_row->>'yellowCards','')::integer,0),
+    coalesce(nullif(v_row->>'redCards','')::integer,0),coalesce(nullif(v_row->>'ownGoals','')::integer,0),
+    coalesce(v_row->'stats','{}'::jsonb)||jsonb_build_object('playerOfTheMatch',coalesce((v_row->>'playerOfTheMatch')::boolean,false)));
+   v_match_stats_created:=v_match_stats_created+1;
   end if;
  end loop;
 
@@ -356,7 +417,7 @@ begin
    'seasonsCreated',v_created_seasons,'matchesCreated',v_matches_created,
    'matchesUpdated',v_matches_updated,'transfersCreated',v_transfers_created,
    'seasonStatsCreated',v_stats_created,'seasonStatsUpdated',v_stats_updated,
-   'trophiesCreated',v_trophies_created,'managerSpellsCreated',v_manager_spells_created
+   'trophiesCreated',v_trophies_created,'matchStatsCreated',v_match_stats_created,'matchStatsUpdated',v_match_stats_updated,'managerSpellsCreated',v_manager_spells_created
   )
  )
  where j.id=(select x.id from public.import_jobs x where x.owner_id=v_owner and x.career_id=p_career_id
@@ -368,7 +429,7 @@ begin
   'seasons_created',v_created_seasons,'matches_created',v_matches_created,
   'matches_updated',v_matches_updated,'transfers_created',v_transfers_created,
   'season_stats_created',v_stats_created,'season_stats_updated',v_stats_updated,
-  'trophies_created',v_trophies_created,'manager_spells_created',v_manager_spells_created
+  'trophies_created',v_trophies_created,'match_stats_created',v_match_stats_created,'match_stats_updated',v_match_stats_updated,'manager_spells_created',v_manager_spells_created
  ));
 end;
 $$;
