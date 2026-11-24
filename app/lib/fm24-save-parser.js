@@ -1843,6 +1843,7 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   for (const match of matches) seasonStarts.add(match.seasonStart);
   for (const stat of playerSeasonRecords) seasonStarts.add(stat.seasonStart);
   for (const trophy of trophies) seasonStarts.add(trophy.seasonStart);
+  for (const spell of playerClubHistory) { const d=spell.fromDate||spell.toDate; if(d) seasonStarts.add(seasonStartOf(d)); }
   if (gameDate) seasonStarts.add(seasonStartOf(gameDate));
   const seasons = [...seasonStarts].filter(y=>y>=1900&&y<=2200).sort((a,b)=>a-b).map(year=>({
     label:year+'/'+String(year+1).slice(-2),startDate:year+'-07-01',endDate:(year+1)+'-06-30',
