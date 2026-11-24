@@ -1699,15 +1699,53 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const matches = parseFixtures(archive, managedClub.id, teamClubMap, stageMap, onProgress);
   const transfers = parseTransfers(archive, people, managedClub.id, teamClubMap, onProgress);
   const matchReports = parseMatchReports(archive, managedClub.id, teamClubMap, onProgress);
-  const fixtureById = new Map(matches.map(match=>[[match.fixtureId,match.homeTeam,match.awayTeam].join('|'),match]));
+  const fixturesByComposite = new Map();
+  for (const match of matches) {
+    const key=[match.fixtureId,match.homeTeam,match.awayTeam].join('|');
+    if(!fixturesByComposite.has(key)) fixturesByComposite.set(key,[]);
+    fixturesByComposite.get(key).push(match);
+  }
+  const stageNameCounts = new Map();
+  for (const report of matchReports) {
+    const key=[report.fixtureId,report.homeTeam,report.awayTeam].join('|');
+    const candidates=fixturesByComposite.get(key)||[];
+    const name=report.competitionName||report.competitionShortName;
+    if(!name) continue;
+    for(const stageId of new Set(candidates.map(match=>match.stageId))) {
+      if(!stageNameCounts.has(stageId)) stageNameCounts.set(stageId,new Map());
+      const names=stageNameCounts.get(stageId);
+      names.set(name,(names.get(name)||0)+1);
+    }
+  }
+  const stageNameById = new Map();
+  for(const [stageId,names] of stageNameCounts) {
+    const best=[...names.entries()].sort((a,b)=>b[1]-a[1])[0];
+    if(best) stageNameById.set(stageId,best[0]);
+  }
+  const competitionNameByUid = new Map();
+  for(const [stageId,name] of stageNameById) {
+    const uid=stageMap.get(stageId);
+    if(uid&&!competitionNameByUid.has(uid)) competitionNameByUid.set(uid,name);
+  }
   const playerMatchStats = [];
   for (const report of matchReports) {
-    const fixture = fixtureById.get([report.fixtureId,report.homeTeam,report.awayTeam].join('|'));
-    if (!fixture) continue;
-    fixture.stadium = report.stadium;
-    fixture.minutes = report.minutes;
-    fixture.playerOfTheMatch = report.playerOfTheMatch;
-    for (const player of report.players) playerMatchStats.push({
+    const key=[report.fixtureId,report.homeTeam,report.awayTeam].join('|');
+    const candidates=fixturesByComposite.get(key)||[];
+    if(!candidates.length) continue;
+    const name=report.competitionName||report.competitionShortName;
+    const bestStage=[...new Set(candidates.map(match=>match.stageId))]
+      .map(stageId=>({stageId,score:stageNameCounts.get(stageId)?.get(name)||0}))
+      .sort((a,b)=>b.score-a.score)[0];
+    const stageId=bestStage?.score>0?bestStage.stageId:null;
+    const eligible=candidates.filter(match=>(stageId===null||match.stageId===stageId)&&match.date<=gameDate&&
+      match.homeScore!==null&&match.awayScore!==null).sort((a,b)=>b.date.localeCompare(a.date));
+    const fixture=eligible[0];
+    if(!fixture) continue;
+    fixture.stadium=report.stadium;
+    fixture.minutes=report.minutes;
+    fixture.playerOfTheMatch=report.playerOfTheMatch;
+    fixture.competitionName=name||stageNameById.get(fixture.stageId)||null;
+    for(const player of report.players) playerMatchStats.push({
       ...player,fixtureId:report.fixtureId,stageId:fixture.stageId,
       homeTeam:report.homeTeam,awayTeam:report.awayTeam,clubId:teamClubMap.get(player.teamId)??null
     });
@@ -1716,13 +1754,17 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const trophies = parseTrophies(archive, managedClub.id, teamClubMap, competitionKeys);
   const managerHistory = parseManagerSpellsForClub(archive, rawPeople, managerName, managedClub.id, teams, matches, gameDate);
   const competitionMap = new Map();
-  const addCompetition = (uid, rawId) => {
+  const addCompetition = (uid, rawId, name) => {
     if (!uid) return;
-    if (!competitionMap.has(uid)) competitionMap.set(uid,{uid,name:'Competição FM24 '+uid,rawIds:[]});
+    if (!competitionMap.has(uid)) competitionMap.set(uid,{uid,name:name||'Competição FM24 '+uid,rawIds:[]});
+    else if(name&&competitionMap.get(uid).name.startsWith('Competição FM24 ')) competitionMap.get(uid).name=name;
     if (rawId !== undefined && !competitionMap.get(uid).rawIds.includes(rawId)) competitionMap.get(uid).rawIds.push(rawId);
   };
-  for (const match of matches) addCompetition(match.competitionUid || match.stageId, match.stageId);
-  for (const trophy of trophies) addCompetition(trophy.competitionUid, trophy.competitionKey);
+  for (const match of matches) {
+    match.competitionName=match.competitionName||stageNameById.get(match.stageId)||null;
+    addCompetition(match.competitionUid || match.stageId, match.stageId, match.competitionName);
+  }
+  for (const trophy of trophies) addCompetition(trophy.competitionUid, trophy.competitionKey, competitionNameByUid.get(trophy.competitionUid));
   const seasonStarts = new Set();
   for (const match of matches) seasonStarts.add(match.seasonStart);
   for (const stat of playerSeasonRecords) seasonStarts.add(stat.seasonStart);
