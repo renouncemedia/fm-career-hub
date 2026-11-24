@@ -501,3 +501,84 @@ body{background:radial-gradient(1100px 420px at 12% -8%,rgba(0,163,92,.13),trans
 .fm-app .tactics-panel .pitch-player-info em{font-size:8px!important;line-height:1.1!important}
 .fm-app .tactics-panel .pitch-slot{width:clamp(112px,22%,142px)!important}
 @media(max-width:760px){.fm-app .tactics-panel .pitch-slot{width:clamp(100px,27%,124px)!important}.fm-app .tactics-panel .pitch-player{grid-template-columns:25px minmax(0,1fr)!important;min-height:33px!important;padding:3px 14px 3px 3px!important}.fm-app .tactics-panel .pitch-player-ca{min-width:24px!important;height:24px!important;font-size:14px!important}.fm-app .tactics-panel .pitch-player-info b{font-size:9px!important}}
+
+
+/* UX audit — responsive consistency, keyboard access and readable data */
+.fm-app, .fm-app *{min-width:0}
+.fm-app button,.fm-app a,.fm-app input,.fm-app select,.fm-app textarea{touch-action:manipulation}
+.fm-app button:focus-visible,.fm-app a:focus-visible,.fm-app input:focus-visible,.fm-app select:focus-visible,.fm-app textarea:focus-visible,.fm-app [tabindex]:focus-visible{
+ outline:2px solid var(--accent)!important;outline-offset:3px!important
+}
+.fm-app button:disabled{cursor:not-allowed;opacity:.58}
+.fm-app .desktop-nav-group-button[aria-expanded="true"]{background:var(--surface);border-color:var(--line)}
+.fm-app .desktop-nav-dropdown{z-index:80;max-height:min(70vh,520px);overflow:auto}
+.fm-app .module-nav{scrollbar-width:thin;overscroll-behavior-x:contain}
+.fm-app .module-link{min-height:40px}
+.fm-app .desktop-nav-group-button,.fm-app .desktop-nav-actions button{min-height:38px}
+.fm-app .panel{min-width:0}
+.fm-app .panel-heading{min-width:0}
+.fm-app .panel-actions{min-width:0;flex-wrap:wrap}
+.fm-app .panel-actions>*{max-width:100%}
+.fm-app .filters,.fm-app .advanced-filters{min-width:0}
+.fm-app .filters input,.fm-app .filters select,.fm-app .advanced-filters input,.fm-app .advanced-filters select{min-width:0;max-width:100%}
+.fm-app .table-wrap{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin}
+.fm-app .table-wrap table{min-width:760px}
+.fm-app .records-panel table,.fm-app .coverage-table{min-width:620px}
+.fm-app th.sortable{cursor:pointer}
+.fm-app th.sortable:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+.fm-app .player-modal{max-height:min(90dvh,900px);overflow-y:auto;overscroll-behavior:contain}
+.fm-app .modal-backdrop{z-index:100;align-items:center}
+.fm-app .close-btn,.fm-app .row-btn{min-width:36px;min-height:36px}
+.fm-app .status-select{min-height:34px}
+.fm-app .empty{overflow-wrap:anywhere}
+.fm-app .module-description,.fm-app .intro,.fm-app .alert{overflow-wrap:anywhere}
+.fm-app .stat-grid article,.fm-app .pcard,.fm-app .depth-card{min-width:0}
+.fm-app .pcards{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.fm-app .view-toggle{flex-shrink:0}
+.fm-app .view-toggle button{min-height:36px}
+.fm-app .tactics-panel .pitch-controls{row-gap:10px}
+.fm-app .tactics-panel .pitch-controls label{max-width:100%;flex-wrap:wrap}
+.fm-app .tactics-panel .pitch-controls select,.fm-app .tactics-panel .pitch-controls input{max-width:100%}
+.fm-app .tactics-panel .pitch-player{cursor:grab}
+.fm-app .tactics-panel .pitch-player:focus-visible{outline:3px solid #c8f169!important;outline-offset:2px}
+@media(max-width:900px){
+ .fm-app .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fm-app .desktop-nav-groups{flex-wrap:wrap}
+ .fm-app .desktop-group-nav{align-items:flex-start}
+ .fm-app .desktop-nav-actions{flex-shrink:0}
+ .fm-app .tactics-panel .tactic-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+ .fm-app .app{padding-left:14px!important;padding-right:14px!important}
+ .fm-app .module-nav{display:flex!important;gap:5px;overflow-x:auto;white-space:nowrap;padding:8px 0 12px;margin:0 0 12px;scroll-snap-type:x proximity}
+ .fm-app .module-link{scroll-snap-align:start;flex:0 0 auto}
+ .fm-app .nav-brand,.fm-app .nav-section-label{display:none!important}
+ .fm-app .desktop-group-nav{display:none!important}
+ .fm-app .panel-heading{flex-direction:column;align-items:stretch}
+ .fm-app .panel-actions{width:100%}
+ .fm-app .panel-actions button{flex:1 1 auto}
+ .fm-app .table-foot{align-items:flex-start;flex-direction:column}
+ .fm-app .tactics-panel .tactics-layout.tactics-full .fm-pitch{max-width:100%!important}
+ .fm-app .tactics-panel .pitch-controls .pitch-stats{width:auto!important;margin-left:auto}
+}
+@media(max-width:520px){
+ .fm-app .app{padding-left:10px!important;padding-right:10px!important}
+ .fm-app .content{padding-top:14px!important}
+ .fm-app .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .fm-app .stat-grid article{padding:12px}
+ .fm-app .stat-grid article span{font-size:8px;letter-spacing:.7px}
+ .fm-app .stat-grid article strong{font-size:23px}
+ .fm-app .panel{padding:12px}
+ .fm-app .panel-actions{display:grid;grid-template-columns:1fr 1fr}
+ .fm-app .panel-actions .primary-btn{grid-column:1/-1}
+ .fm-app .advanced-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .fm-app .tactics-panel .tactic-toolbar{grid-template-columns:1fr}
+ .fm-app .tactics-panel .pitch-controls{align-items:stretch}
+ .fm-app .tactics-panel .pitch-controls label{flex:1 1 42%}
+ .fm-app .tactics-panel .pitch-controls .pitch-stats{flex:1 1 100%;margin:0}
+ .fm-app .player-modal{padding:17px}
+ .fm-app .modal-actions{position:sticky;bottom:-17px;background:var(--surface);padding:12px 0 2px}
+}
+@media(prefers-reduced-motion:reduce){
+ .fm-app *, .fm-app *::before, .fm-app *::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
