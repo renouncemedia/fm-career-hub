@@ -1390,7 +1390,6 @@ function parsePlayerSeasonStats(archive, people, targetClubId, teamClubMap, onPr
   const ls = archive.member('rgman/player_stats_hist_ls.dat');
   const groups = readStatGroups(ls), counts = new Map();
   for (const p of people) {
-    if (p.clubId !== targetClubId && p.contractClubId !== targetClubId) continue;
     if (Number.isInteger(p.statsGroup) && p.statsGroup >= 0 && p.statsGroup < groups.length)
       counts.set(p.statsGroup, (counts.get(p.statsGroup) || 0) + 1);
   }
