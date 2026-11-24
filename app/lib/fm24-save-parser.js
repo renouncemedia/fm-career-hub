@@ -1768,10 +1768,21 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const trophies = parseTrophies(archive, managedClub.id, teamClubMap, competitionKeys);
   const managerHistory = parseManagerSpellsForClub(archive, rawPeople, managerName, managedClub.id, teams, matches, gameDate);
   const competitionMap = new Map();
+  const competitionType = name => {
+    if(!name) return 'Competição';
+    if(/amigável|friendly/i.test(name)) return 'Amigável';
+    if(/champions|europa league|conference league|uefa|continental/i.test(name)) return 'Continental';
+    if(/taça|copa|cup/i.test(name)) return 'Taça';
+    if(/liga|league|divisão|division/i.test(name)) return 'Liga';
+    return 'Competição';
+  };
   const addCompetition = (uid, rawId, name) => {
     if (!uid) return;
-    if (!competitionMap.has(uid)) competitionMap.set(uid,{uid,name:name||'Competição FM24 '+uid,rawIds:[]});
-    else if(name&&competitionMap.get(uid).name.startsWith('Competição FM24 ')) competitionMap.get(uid).name=name;
+    if (!competitionMap.has(uid)) competitionMap.set(uid,{uid,name:name||'Competição FM24 '+uid,type:competitionType(name),rawIds:[]});
+    else if(name&&competitionMap.get(uid).name.startsWith('Competição FM24 ')) {
+      competitionMap.get(uid).name=name;
+      competitionMap.get(uid).type=competitionType(name);
+    }
     if (rawId !== undefined && !competitionMap.get(uid).rawIds.includes(rawId)) competitionMap.get(uid).rawIds.push(rawId);
   };
   for (const match of matches) {
