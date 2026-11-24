@@ -22,7 +22,7 @@ export type FM24History = {
   warnings:string[];
 };
 export type FM24Save = { name:string; formatVersion:string; gameDate:string; players:FM24Player[]; clubs:FM24Club[]; teamClubMap:{teamId:number;clubId:number}[]; history:FM24History; warnings:string[] };
-export function parseSave(bytes: Uint8Array, onProgress?: (progress:number, message:string)=>void, options?:{clubName?:string}): Promise<FM24Save>;
+export function parseSave(bytes: Uint8Array, onProgress?: (progress:number, message:string)=>void, options?:{clubName?:string;managerName?:string}): Promise<FM24Save>;
 export const ROLES: any[];
 export const ATTRIBUTES: any[];
 export const POSITIONS: string[];
