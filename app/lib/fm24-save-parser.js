@@ -1620,6 +1620,53 @@ function parseMatchReports(archive, targetClubId, teamClubMap, onProgress) {
   return [...reports.values()];
 }
 
+
+function buildPlayerClubHistory(transfers, people, gameDate) {
+  const byPerson=new Map(),peopleById=new Map(people.map(person=>[person.id,person]));
+  for(const transfer of transfers) {
+    if(!byPerson.has(transfer.personId)) byPerson.set(transfer.personId,[]);
+    byPerson.get(transfer.personId).push(transfer);
+  }
+  const result=[];
+  for(const [personId,items] of byPerson) {
+    items.sort((a,b)=>a.date.localeCompare(b.date));
+    const person=peopleById.get(personId);
+    let currentClub=null,currentStart=null,currentStatus='Plantel',entryType=null,entryFee=null;
+    const add=(clubId,fromDate,toDate,status,type,fee)=>{
+      if(clubId===null||clubId===undefined)return;
+      result.push({personId,clubId,fromDate,toDate,status,transferFee:null,
+        notes:'FM24 · entrada: '+(type||'Histórico')+(fee!==null&&fee!==undefined?' · valor original: '+fee+' GBP':'')});
+    };
+    for(const transfer of items) {
+      if(currentClub===null&&transfer.fromClubId!==null) currentClub=transfer.fromClubId;
+      if(currentClub!==null&&transfer.fromClubId!==null&&currentClub!==transfer.fromClubId) {
+        add(currentClub,currentStart,transfer.date,currentStatus,entryType,entryFee);
+        currentClub=transfer.fromClubId;currentStart=null;currentStatus='Plantel';entryType=null;entryFee=null;
+      }
+      if(currentClub!==null) add(currentClub,currentStart,transfer.date,currentStatus,entryType,entryFee);
+      currentClub=transfer.toClubId;
+      currentStart=transfer.date;
+      currentStatus=transfer.type==='Empréstimo'?'Emprestado':'Plantel';
+      entryType=transfer.type;
+      entryFee=transfer.fee;
+    }
+    const finalClub=person?.clubId??null;
+    if(finalClub!==null) {
+      if(currentClub!==null&&currentClub!==finalClub) {
+        add(currentClub,currentStart,gameDate,currentStatus,entryType,entryFee);
+        currentClub=finalClub;currentStart=null;entryType=null;entryFee=null;
+      }
+      const loaned=person?.contractClubId!==null&&person?.contractClubId!==undefined&&person.contractClubId!==finalClub;
+      add(finalClub,currentStart,null,loaned?'Emprestado':'Plantel',entryType,entryFee);
+    } else if(currentClub!==null) add(currentClub,currentStart,gameDate,currentStatus,entryType,entryFee);
+  }
+  const seen=new Set();
+  return result.filter(row=>{
+    const key=[row.personId,row.clubId,row.fromDate||'',row.toDate||'',row.status,row.notes].join('|');
+    if(seen.has(key))return false;seen.add(key);return true;
+  });
+}
+
 function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId, teams, matches, gameDate) {
   const normalise = value => String(value || '').replace(/\bGOAT\b/ig,'').normalize('NFD')
     .replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
@@ -1688,12 +1735,13 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const target = normalise(clubName);
   const managedClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target ||
     (target === 'sporting' && normalise(c.shortName).startsWith('sporting')));
-  if (!managedClub) return {managedClubId:null,clubs:[],competitions:[],seasons:[],matches:[],transfers:[],playerSeasonRecords:[],playerMatchStats:[],trophies:[],managerPersonId:null,managerSpells:[],warnings:['Não foi possível associar o clube da carreira aos clubes do save; o histórico não foi importado.']};
+  if (!managedClub) return {managedClubId:null,clubs:[],competitions:[],seasons:[],matches:[],transfers:[],playerClubHistory:[],playerSeasonRecords:[],playerMatchStats:[],trophies:[],managerPersonId:null,managerSpells:[],warnings:['Não foi possível associar o clube da carreira aos clubes do save; o histórico não foi importado.']};
   const teamClubMap = new Map(teams.filter(t=>t.club!==null).map(t=>[t.ordinal+1,t.club]));
   const competitionKeys = readCompetitionKeys(gameDb), stageMap = readCompetitionStages(gameDb, competitionKeys);
   onProgress?.(84, 'A preparar o histórico da carreira…');
   const matches = parseFixtures(archive, managedClub.id, teamClubMap, stageMap, onProgress);
   const transfers = parseTransfers(archive, people, managedClub.id, teamClubMap, onProgress);
+  const playerClubHistory = buildPlayerClubHistory(transfers, people, gameDate);
   const matchReports = parseMatchReports(archive, managedClub.id, teamClubMap, onProgress);
   const fixturesByComposite = new Map();
   for (const match of matches) {
@@ -1807,7 +1855,7 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const historyClubs = [...clubIds].filter(id=>id!==null&&clubMap.has(id)).map(id=>{
     const c=clubMap.get(id);return {fm24ClubId:c.id,name:c.name,shortName:c.shortName,country:NATIONS[String(c.nation)]||null};
   });
-  return {managedClubId:managedClub.id,clubs:historyClubs,competitions:[...competitionMap.values()],seasons,matches,transfers,playerSeasonRecords,playerMatchStats,trophies,managerPersonId:managerHistory.managerPersonId,managerSpells:managerHistory.spells,warnings:managerHistory.warning?[managerHistory.warning]:[]};
+  return {managedClubId:managedClub.id,clubs:historyClubs,competitions:[...competitionMap.values()],seasons,matches,transfers,playerClubHistory,playerSeasonRecords,playerMatchStats,trophies,managerPersonId:managerHistory.managerPersonId,managerSpells:managerHistory.spells,warnings:managerHistory.warning?[managerHistory.warning]:[]};
 }
 
 /* ---------- orquestrador: parseSave ---------- */
