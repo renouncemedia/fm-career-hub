@@ -1459,6 +1459,160 @@ function parseTrophies(archive, targetClubId, teamClubMap, competitionKeys) {
   return out.sort((a,b)=>a.wonOn.localeCompare(b.wonOn));
 }
 
+
+const MATCH_PLAYER_OFFSETS = {
+  goals:19,shots:40,shotsOnTarget:41,assists:55,clearCutChances:56,dribbles:57,fouls:59,
+  yellowCards:62,redCards:63,minuteOff:66,addedTimeOff:68,minuteOn:70,injuryMinute:71,
+  bookedMinute:72,sentOffMinute:73,passes:85,passesCompleted:86,keyPasses:87,crosses:88,
+  crossesCompleted:89,tackles:91,tacklesWon:92,keyTackles:93,headers:94,headersWon:95,
+  keyHeaders:96,interceptions:97,clearances:139,goalsOutsideBox:165,
+  mistakesLeadingToGoal:130,goalsConceded:20,blockedShots:42,longShots:43,halfChances:45,
+  savesHeld:49,savesParried:50,savesTipped:51,shotsOutsideBox:166
+};
+function findByteSequence(bytes, sequence, start, end) {
+  const limit = Math.min(bytes.length, end ?? bytes.length);
+  for (let p = Math.max(0,start||0); p + sequence.length <= limit; p++) {
+    let ok = true;
+    for (let i=0;i<sequence.length;i++) if (bytes[p+i] !== sequence[i]) {ok=false;break;}
+    if (ok) return p;
+  }
+  return -1;
+}
+function matchPlayerRecordSize(bytes, at) {
+  if (at < 1 || at + 200 > bytes.length) return null;
+  let end = at + 195;
+  const shots = bytes[at + 194];
+  if (shots > 30) return null;
+  for (let i=0;i<shots;i++) {
+    if (end + 3 > bytes.length) return null;
+    const parts = bytes[end + 2];
+    if (parts > 20) return null;
+    end += 3 + 15 * parts;
+  }
+  if (end + 5 > bytes.length) return null;
+  const items = bytes[end + 3];
+  if (items > 30) return null;
+  const size = end + 5 + 11 * items - at;
+  return size >= 200 && at + size <= bytes.length ? size : null;
+}
+function parseMatchPlayer(bytes, at, teamId, matchMinutes, playerOfTheMatch) {
+  if (at < 1 || at + 200 > bytes.length || bytes[at - 1] !== 2) return null;
+  const dv = dvOf(bytes);
+  const ratingRaw = dv.getUint16(at + 122, true);
+  const distance = dv.getFloat32(at + 126, true), xg = dv.getFloat32(at + 24, true);
+  if (!(ratingRaw >= 1 && ratingRaw <= 1000 && Number.isFinite(distance) && distance >= 0 && distance < 25000 &&
+        Number.isFinite(xg) && xg >= 0 && xg < 10)) return null;
+  const values = {};
+  for (const [field,offset] of Object.entries(MATCH_PLAYER_OFFSETS)) values[field] = bytes[at + offset];
+  if (['minuteOff','minuteOn','bookedMinute','injuryMinute','sentOffMinute'].some(field=>values[field] > 130)) return null;
+  if (values.shotsOnTarget > values.shots || values.passesCompleted > values.passes ||
+      values.crossesCompleted > values.crosses || values.tacklesWon > values.tackles ||
+      values.headersWon > values.headers) return null;
+  const played = distance > 0 || ['goals','assists','shots','passes','crosses','tackles','headers','fouls','interceptions','clearances','minuteOn','minuteOff']
+    .some(field=>values[field] > 0);
+  if (played && ratingRaw < 100) return null;
+  const startSlot = dv.getUint16(at + 7, true), endSlot = dv.getUint16(at + 109, true);
+  const startMinute = values.minuteOn;
+  const endMinute = values.minuteOff ? values.minuteOff + values.addedTimeOff : matchMinutes;
+  const minutesPlayed = played ? Math.max(0,Math.min(matchMinutes,endMinute)-startMinute) : 0;
+  const personId = dv.getUint32(at, true);
+  return {
+    personId,teamId,started:startSlot!==0,minutesPlayed,position:null,
+    rating:played ? Math.round((ratingRaw/100)*100)/100 : null,
+    goals:values.goals,assists:values.assists,shots:values.shots,shotsOnTarget:values.shotsOnTarget,
+    keyPasses:values.keyPasses,tackles:values.tackles,interceptions:values.interceptions,
+    passesCompleted:values.passesCompleted,passesAttempted:values.passes,
+    yellowCards:values.yellowCards,redCards:values.redCards,ownGoals:0,
+    playerOfTheMatch:personId===playerOfTheMatch,
+    stats:{...values,xg,distance,shirt:bytes[at+4],startSlot,endSlot,playerOfTheMatch:personId===playerOfTheMatch}
+  };
+}
+function parseMatchPlayers(bytes, first, squad, teamId, matchMinutes, playerOfTheMatch) {
+  const players = [];
+  let at = first;
+  for (let i=0;i<squad;i++) {
+    const player = parseMatchPlayer(bytes,at,teamId,matchMinutes,playerOfTheMatch);
+    const size = player ? matchPlayerRecordSize(bytes,at) : null;
+    if (!player || !size) return null;
+    players.push(player);
+    at += size;
+  }
+  return {players,end:at-1};
+}
+function parseMatchSide(bytes, start, teamId, matchMinutes, playerOfTheMatch) {
+  const marker = [2,teamId&255,(teamId>>>8)&255,(teamId>>>16)&255,(teamId>>>24)&255];
+  let at = findByteSequence(bytes,marker,start,start+12000);
+  while (at >= 0) {
+    const squad = bytes[at+5];
+    if (squad > 0 && squad <= 60) {
+      for (let first=at+6; first<Math.min(at+1200,bytes.length); first++) {
+        if (first<14 || bytes[first-14]!==2 || bytes[first-1]!==2) continue;
+        const walked = parseMatchPlayers(bytes,first,squad,teamId,matchMinutes,playerOfTheMatch);
+        if (walked) return walked;
+      }
+    }
+    at = findByteSequence(bytes,marker,at+1,start+12000);
+  }
+  return null;
+}
+function parseMatchReportAt(bytes, p, targetClubId, teamClubMap) {
+  if (bytes[p]!==2 || bytes[p+1]!==2 || bytes[p+6]!==2 || bytes[p+11]>31 ||
+      bytes[p+12]!==0 || bytes[p+13]>1 || bytes[p+22]!==2 || bytes[p+23]!==2) return null;
+  const dv = dvOf(bytes), homeTeam=dv.getUint32(p+2,true), awayTeam=dv.getUint32(p+24,true);
+  const homeClubId=teamClubMap.get(homeTeam)??null, awayClubId=teamClubMap.get(awayTeam)??null;
+  if (homeClubId!==targetClubId && awayClubId!==targetClubId) return null;
+  const head=bytes.subarray(Math.max(0,p-120),p);
+  let named=null;
+  for (let length=1;length<111;length++) {
+    const at=head.length-length-4;
+    if (at>=9 && dvOf(head).getUint32(at,true)===length && head[at-9]===2) {named={length,at};break;}
+  }
+  if (!named) return null;
+  const fixtureId=dvOf(head).getUint32(named.at-8,true);
+  const stadium=new TextDecoder().decode(head.subarray(named.at+4)).replace(/\0+$/,'').trim() || null;
+  const partMarker=[2,homeTeam&255,(homeTeam>>>8)&255,(homeTeam>>>16)&255,(homeTeam>>>24)&255];
+  const part=findByteSequence(bytes,partMarker,p+28,p+28+12000);
+  if (part<0) return null;
+  const pomAt=part-14;
+  let playerOfTheMatch=null,matchMinutes=90;
+  if (pomAt>=0 && bytes[pomAt]===2) {
+    playerOfTheMatch=dv.getUint32(pomAt+1,true);
+    const minutes=dv.getUint16(pomAt+7,true);
+    if (minutes>=45 && minutes<=130) matchMinutes=minutes;
+  }
+  const home=parseMatchSide(bytes,p+28,homeTeam,matchMinutes,playerOfTheMatch);
+  if (!home) return null;
+  const away=parseMatchSide(bytes,home.end,awayTeam,matchMinutes,playerOfTheMatch);
+  if (!away) return null;
+  const players=[...home.players,...away.players].filter(player=>teamClubMap.get(player.teamId)===targetClubId);
+  return {fixtureId,homeTeam,awayTeam,homeClubId,awayClubId,stadium,playerOfTheMatch,minutes:matchMinutes,players};
+}
+function parseMatchReports(archive, targetClubId, teamClubMap, onProgress) {
+  const raw=archive.member('match_stats_cfg.dat'), reports=new Map();
+  let tail=new Uint8Array(0), offset=0, processed=0, blockNumber=0;
+  const lookahead=30000, tailSize=lookahead+120;
+  const scan=(bytes,base,safeEnd)=>{
+    const start=Math.max(0,processed-base);
+    for(let p=start;p+28<=safeEnd;p++){
+      if(bytes[p]!==2 || bytes[p+1]!==2) continue;
+      const report=parseMatchReportAt(bytes,p,targetClubId,teamClubMap);
+      if(report && !reports.has(report.fixtureId)) reports.set(report.fixtureId,report);
+    }
+    processed=base+safeEnd;
+  };
+  forEachInnerBlock(raw,block=>{
+    const combined=concatBytes([tail,block]),base=offset-tail.length;
+    scan(combined,base,Math.max(0,combined.length-lookahead));
+    tail=combined.subarray(Math.max(0,combined.length-tailSize)).slice();
+    offset+=block.length;
+    blockNumber++;
+    if(blockNumber%200===0) onProgress?.(93+Math.min(1,blockNumber/4077),'A ler estatísticas detalhadas dos jogos…');
+  });
+  const finalBase=offset-tail.length;
+  scan(tail,finalBase,tail.length);
+  return [...reports.values()];
+}
+
 function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId, teams, matches, gameDate) {
   const normalise = value => String(value || '').replace(/\bGOAT\b/ig,'').normalize('NFD')
     .replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
