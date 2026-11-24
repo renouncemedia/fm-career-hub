@@ -1,7 +1,7 @@
 name: Validate FM Career Hub
 on:
   push:
-    branches: [main, fix/tactics-review, fix/point-8-stability]
+    branches: [main, fix/tactics-review, fix/point-8-stability, feature/fm24-history-import]
   pull_request:
     branches: [main]
 jobs:
