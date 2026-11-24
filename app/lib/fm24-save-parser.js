@@ -1527,7 +1527,7 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const target = normalise(clubName);
   const managedClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target ||
     (target === 'sporting' && normalise(c.shortName).startsWith('sporting')));
-  if (!managedClub) return {managedClubId:null,clubs:[],competitions:[],seasons:[],matches:[],transfers:[],playerSeasonRecords:[],trophies:[],warnings:['Não foi possível associar o clube da carreira aos clubes do save; o histórico não foi importado.']};
+  if (!managedClub) return {managedClubId:null,clubs:[],competitions:[],seasons:[],matches:[],transfers:[],playerSeasonRecords:[],trophies:[],managerPersonId:null,managerSpells:[],warnings:['Não foi possível associar o clube da carreira aos clubes do save; o histórico não foi importado.']};
   const teamClubMap = new Map(teams.filter(t=>t.club!==null).map(t=>[t.ordinal+1,t.club]));
   const competitionKeys = readCompetitionKeys(gameDb), stageMap = readCompetitionStages(gameDb, competitionKeys);
   onProgress?.(84, 'A preparar o histórico da carreira…');
