@@ -1688,10 +1688,10 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const matches = parseFixtures(archive, managedClub.id, teamClubMap, stageMap, onProgress);
   const transfers = parseTransfers(archive, people, managedClub.id, teamClubMap, onProgress);
   const matchReports = parseMatchReports(archive, managedClub.id, teamClubMap, onProgress);
-  const fixtureById = new Map(matches.map(match=>[match.fixtureId,match]));
+  const fixtureById = new Map(matches.map(match=>[[match.fixtureId,match.homeTeam,match.awayTeam].join('|'),match]));
   const playerMatchStats = [];
   for (const report of matchReports) {
-    const fixture = fixtureById.get(report.fixtureId);
+    const fixture = fixtureById.get([report.fixtureId,report.homeTeam,report.awayTeam].join('|'));
     if (!fixture) continue;
     fixture.stadium = report.stadium;
     fixture.minutes = report.minutes;
