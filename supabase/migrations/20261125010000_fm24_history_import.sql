@@ -260,7 +260,7 @@ begin
    limit 1;
   if v_match_id is null then continue; end if;
   v_club_id := nullif(v_club_ids->>coalesce(v_row->>'clubId',''),'')::uuid;
-  if exists(select 1 from public.player_match_stats s where s.match_id=v_match_id and s.player_id=v_player_id) then
+  if exists(select 1 from public.player_match_stats s where s.owner_id=v_owner and s.match_id=v_match_id and s.player_id=v_player_id) then
    update public.player_match_stats s set
     club_id=coalesce(v_club_id,s.club_id),
     started=nullif(v_row->>'started','')::boolean,
@@ -280,7 +280,7 @@ begin
     red_cards=coalesce(nullif(v_row->>'redCards','')::integer,0),
     own_goals=coalesce(nullif(v_row->>'ownGoals','')::integer,0),
     stats=coalesce(v_row->'stats','{}'::jsonb)||jsonb_build_object('playerOfTheMatch',coalesce((v_row->>'playerOfTheMatch')::boolean,false))
-   where s.match_id=v_match_id and s.player_id=v_player_id;
+   where s.owner_id=v_owner and s.match_id=v_match_id and s.player_id=v_player_id;
    v_match_stats_updated:=v_match_stats_updated+1;
   else
    insert into public.player_match_stats(owner_id,match_id,player_id,club_id,started,minutes_played,position,rating,
