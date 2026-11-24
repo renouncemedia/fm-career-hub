@@ -163,7 +163,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
    });
    if(result.error)throw result.error;
    const summary=result.data||{};
-   setDone("Importação concluída: "+(summary.records_created??created)+" novos, "+(summary.records_updated??updated)+" atualizados, "+(summary.records_skipped??skipped)+" ignorados.");
+   const history=summary.history||{};setDone("Save importado: "+(summary.records_created??created)+" jogadores novos, "+(summary.records_updated??updated)+" atualizados; "+(history.matches_created??0)+" jogos, "+(history.transfers_created??0)+" transferências, "+(history.season_stats_created??0)+" registos estatísticos e "+(history.trophies_created??0)+" troféus.");
    setPreview(null);await onDone();
   }catch(e:any){setError(e.message||"Erro ao guardar os dados importados.");}
   setBusy(false);
