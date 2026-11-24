@@ -1458,7 +1458,71 @@ function parseTrophies(archive, targetClubId, teamClubMap, competitionKeys) {
   }
   return out.sort((a,b)=>a.wonOn.localeCompare(b.wonOn));
 }
-function buildHistory(archive, gameDb, people, clubs, teams, gameDate, clubName, globalGroupCounts, onProgress) {
+
+function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId, teams, matches, gameDate) {
+  const normalise = value => String(value || '').replace(/\bGOAT\b/ig,'').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const wanted = normalise(managerName);
+  if (!wanted) return {managerPersonId:null,spells:[],warning:null};
+  const candidates = rawPeople.filter(p => p.id >= 0 &&
+    (normalise(p.name) === wanted || normalise(p.fullName) === wanted));
+  if (candidates.length !== 1) return {managerPersonId:null,spells:[],warning:
+    candidates.length ? 'O nome do treinador corresponde a mais do que uma pessoa no save.' :
+      'O nome do treinador da carreira não foi encontrado nos registos do save.'};
+  const manager = candidates[0];
+  const dt = archive.member('tc_manager_history_dt.cmt');
+  const ls = archive.member('tc_manager_history_ls.dat');
+  const groups = readStatGroups(ls), dv = dvOf(dt);
+  const seniorTeams = teams.filter(t=>t.club===targetClubId&&t.type===100).map(t=>t.ordinal+1);
+  if (!seniorTeams.length) return {managerPersonId:manager.id,spells:[],warning:'Não foi possível identificar a equipa principal para validar o histórico do treinador.'};
+  const validGroups = [];
+  for (let index=0; index<groups.length; index++) {
+    const spells = [];
+    for (const offset of groups[index]) {
+      const at = 8 + offset;
+      if (offset < 0 || offset % 31 !== 0 || at + 31 > dt.length) continue;
+      const personId = dv.getUint32(at,true);
+      const startedOn = dateFromPacked(dt,at+4);
+      const endedOn = dateFromPacked(dt,at+8) || gameDate;
+      const won = dv.getUint16(at+20,true), drawn = dv.getUint16(at+22,true), lost = dv.getUint16(at+24,true);
+      spells.push({personId,startedOn,endedOn,won,drawn,lost,reason:dt[at+26],leagueWins:dt[at+27],cupWins:dt[at+28]});
+    }
+    if (!spells.some(spell=>spell.personId===manager.id)) continue;
+    const compared = spells.filter(spell=>spell.startedOn&&spell.endedOn&&spell.won+spell.drawn+spell.lost>=4)
+      .sort((a,b)=>(b.won+b.drawn+b.lost)-(a.won+a.drawn+a.lost)).slice(0,5);
+    if (!compared.length) continue;
+    for (const teamId of seniorTeams) {
+      let difference=0,games=0;
+      for (const spell of compared) {
+        let wins=0,draws=0,losses=0;
+        for (const match of matches) {
+          if (match.homeTeam!==teamId&&match.awayTeam!==teamId) continue;
+          if (!match.homeScore===null || match.homeScore===null || match.awayScore===null) continue;
+          if (match.date<spell.startedOn || match.date>spell.endedOn) continue;
+          const teamWon = match.homeTeam===teamId ? match.homeScore>match.awayScore : match.awayScore>match.homeScore;
+          const level = match.homeScore===match.awayScore;
+          if (level) draws++;
+          else if (teamWon) wins++;
+          else losses++;
+        }
+        difference += Math.abs(wins-spell.won)+Math.abs(draws-spell.drawn)+Math.abs(losses-spell.lost);
+        games += spell.won+spell.drawn+spell.lost;
+      }
+      if (games >= 10 && difference/games <= 0.12) validGroups.push({index,teamId,spells,score:difference/games,games});
+    }
+  }
+  validGroups.sort((a,b)=>a.score-b.score||b.games-a.games);
+  if (!validGroups.length) return {managerPersonId:manager.id,spells:[],warning:'O histórico do treinador existe, mas não foi possível associá-lo com segurança ao Sporting.'};
+  const best = validGroups[0];
+  const managerSpells = best.spells.filter(spell=>spell.personId===manager.id&&spell.startedOn).map(spell=>({
+    personId:manager.id,clubId:targetClubId,teamId:best.teamId,startedOn:spell.startedOn,
+    endedOn:spell.endedOn,won:spell.won,drawn:spell.drawn,lost:spell.lost,
+    reason:spell.reason,leagueWins:spell.leagueWins,cupWins:spell.cupWins
+  }));
+  return {managerPersonId:manager.id,spells:managerSpells,warning:null};
+}
+
+function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate, clubName, managerName, globalGroupCounts, onProgress) {
   const normalise = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const target = normalise(clubName);
   const managedClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target ||
@@ -1471,6 +1535,7 @@ function buildHistory(archive, gameDb, people, clubs, teams, gameDate, clubName,
   const transfers = parseTransfers(archive, people, managedClub.id, teamClubMap, onProgress);
   const playerSeasonRecords = parsePlayerSeasonStats(archive, people, managedClub.id, teamClubMap, globalGroupCounts, onProgress);
   const trophies = parseTrophies(archive, managedClub.id, teamClubMap, competitionKeys);
+  const managerHistory = parseManagerSpellsForClub(archive, rawPeople, managerName, managedClub.id, teams, matches, gameDate);
   const competitionMap = new Map();
   const addCompetition = (uid, rawId) => {
     if (!uid) return;
@@ -1479,7 +1544,6 @@ function buildHistory(archive, gameDb, people, clubs, teams, gameDate, clubName,
   };
   for (const match of matches) addCompetition(match.competitionUid || match.stageId, match.stageId);
   for (const trophy of trophies) addCompetition(trophy.competitionUid, trophy.competitionKey);
-  for (const stat of playerSeasonRecords) addCompetition(competitionKeys.get(stat.leagueKey) || stat.leagueKey, stat.leagueKey);
   const seasonStarts = new Set();
   for (const match of matches) seasonStarts.add(match.seasonStart);
   for (const stat of playerSeasonRecords) seasonStarts.add(stat.seasonStart);
@@ -1496,7 +1560,7 @@ function buildHistory(archive, gameDb, people, clubs, teams, gameDate, clubName,
   const historyClubs = [...clubIds].filter(id=>id!==null&&clubMap.has(id)).map(id=>{
     const c=clubMap.get(id);return {fm24ClubId:c.id,name:c.name,shortName:c.shortName,country:NATIONS[String(c.nation)]||null};
   });
-  return {managedClubId:managedClub.id,clubs:historyClubs,competitions:[...competitionMap.values()],seasons,matches,transfers,playerSeasonRecords,trophies,warnings:[]};
+  return {managedClubId:managedClub.id,clubs:historyClubs,competitions:[...competitionMap.values()],seasons,matches,transfers,playerSeasonRecords,trophies,managerPersonId:managerHistory.managerPersonId,managerSpells:managerHistory.spells,warnings:managerHistory.warning?[managerHistory.warning]:[]};
 }
 
 /* ---------- orquestrador: parseSave ---------- */
@@ -1592,7 +1656,7 @@ async function parseSave(rawBytes, onProgress = () => {}, options = {}) {
       statsGroupCounts.set(group, (statsGroupCounts.get(group) || 0) + 1);
     }
   }
-  const history = buildHistory(a, b, players, clubs, teams, gameDate, options.clubName || '', statsGroupCounts, onProgress);
+  const history = buildHistory(a, b, players, people, clubs, teams, gameDate, options.clubName || '', options.managerName || '', statsGroupCounts, onProgress);
   onProgress(96, 'A preparar a lista de jogadores…');
   const warnings = [...history.warnings];
   if (ambiguous + unbound)
