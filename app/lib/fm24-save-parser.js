@@ -1844,6 +1844,7 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   for (const stat of playerSeasonRecords) seasonStarts.add(stat.seasonStart);
   for (const trophy of trophies) seasonStarts.add(trophy.seasonStart);
   for (const spell of playerClubHistory) { const d=spell.fromDate||spell.toDate; if(d) seasonStarts.add(seasonStartOf(d)); }
+  for (const spell of managerHistory.spells) { if(spell.startedOn) seasonStarts.add(seasonStartOf(spell.startedOn)); if(spell.endedOn) seasonStarts.add(seasonStartOf(spell.endedOn)); }
   if (gameDate) seasonStarts.add(seasonStartOf(gameDate));
   const seasons = [...seasonStarts].filter(y=>y>=1900&&y<=2200).sort((a,b)=>a-b).map(year=>({
     label:year+'/'+String(year+1).slice(-2),startDate:year+'-07-01',endDate:(year+1)+'-06-30',
