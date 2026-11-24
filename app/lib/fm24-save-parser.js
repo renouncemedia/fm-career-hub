@@ -1813,6 +1813,12 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
     });
   }
   const playerSeasonRecords = parsePlayerSeasonStats(archive, people, managedClub.id, teamClubMap, globalGroupCounts, onProgress);
+  const playerById = new Map(people.map(player=>[player.id,player]));
+  const currentSeason = seasonStartOf(gameDate);
+  for(const stat of playerSeasonRecords) if(stat.seasonStart===currentSeason) {
+    const player=playerById.get(stat.personId);
+    if(player) { stat.age=player.age; stat.ca=player.ca; stat.pa=player.pa; }
+  }
   const trophies = parseTrophies(archive, managedClub.id, teamClubMap, competitionKeys);
   const managerHistory = parseManagerSpellsForClub(archive, rawPeople, managerName, managedClub.id, teams, matches, gameDate);
   const competitionMap = new Map();
