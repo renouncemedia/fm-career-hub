@@ -1332,7 +1332,7 @@ function parseFixtures(archive, targetClubId, teamClubMap, stageMap, onProgress)
 }
 function parseTransfers(archive, people, targetClubId, teamClubMap, onProgress) {
   const raw = archive.member('transfer_man.dat'), first = findMagic(raw);
-  if (first < 0) return [];
+  if (first < 0) return {clubTransfers:[],playerTransfers:[]};
   const careerIds = new Set(people.filter(p => p.clubId === targetClubId || p.contractClubId === targetClubId).map(p => p.id));
   const parts = [raw.subarray(0, first)];
   let count = 0;
