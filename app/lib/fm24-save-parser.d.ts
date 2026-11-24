@@ -9,7 +9,7 @@ export type FM24Club = { id:number; uid:number; nation:number; name:string; shor
 export type FM24History = {
   managedClubId:number|null;
   clubs:{fm24ClubId:number;name:string;shortName:string;country:string|null}[];
-  competitions:{uid:number;name:string;rawIds:number[]}[];
+  competitions:{uid:number;name:string;type:string;rawIds:number[]}[];
   seasons:{label:string;startDate:string;endDate:string;isCurrent:boolean}[];
   matches:{fixtureId:number;stageId:number;competitionUid:number|null;date:string;seasonStart:number;homeTeam:number;awayTeam:number;homeClubId:number|null;awayClubId:number|null;homeScore:number|null;awayScore:number|null;attendance:number|null;stadium?:string|null;minutes?:number;playerOfTheMatch?:number|null;competitionName?:string|null;competitionUid?:number}[];
   transfers:{personId:number;date:string;kind:number;type:string;fromClubId:number|null;toClubId:number|null;fee:number;addOns:number;currency:'GBP';originalFee:number;originalFeeWithAddOns:number}[];
