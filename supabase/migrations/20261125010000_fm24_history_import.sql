@@ -44,6 +44,7 @@ declare
  v_matches_created integer := 0;
  v_matches_updated integer := 0;
  v_transfers_created integer := 0;
+ v_player_club_history_created integer := 0;
  v_stats_created integer := 0;
  v_stats_updated integer := 0;
  v_trophies_created integer := 0;
@@ -75,7 +76,8 @@ begin
     or jsonb_array_length(coalesce(p_history->'playerSeasonRecords','[]'::jsonb))>50000
     or jsonb_array_length(coalesce(p_history->'trophies','[]'::jsonb))>10000
     or jsonb_array_length(coalesce(p_history->'managerSpells','[]'::jsonb))>1000
-    or jsonb_array_length(coalesce(p_history->'playerMatchStats','[]'::jsonb))>100000 then
+    or jsonb_array_length(coalesce(p_history->'playerMatchStats','[]'::jsonb))>100000
+    or jsonb_array_length(coalesce(p_history->'playerClubHistory','[]'::jsonb))>50000 then
   raise exception 'O histórico do save excede os limites de importação.';
  end if;
 
@@ -329,6 +331,37 @@ begin
       ' / com variáveis: '||coalesce(v_row->>'originalFeeWithAddOns','0')||' GBP',
     'Save FM24');
   v_transfers_created := v_transfers_created+1;
+ end loop;
+
+ -- Histórico de passagens dos jogadores, reconstruído a partir das transferências.
+ for v_row in select value from jsonb_array_elements(coalesce(p_history->'playerClubHistory','[]'::jsonb))
+ loop
+  select p.id into v_player_id from public.players p
+   where p.owner_id=v_owner and p.external_ids->'fm24'->>'id'=v_row->>'personId'
+   limit 1;
+  if v_player_id is null then continue; end if;
+  v_club_id := nullif(v_club_ids->>coalesce(v_row->>'clubId',''),'')::uuid;
+  if v_club_id is null then continue; end if;
+  v_date := coalesce(nullif(v_row->>'fromDate','')::date,nullif(v_row->>'toDate','')::date);
+  v_season_id := null;
+  if v_date is not null then
+   v_season_start := extract(year from v_date)::integer -
+    case when extract(month from v_date)<7 then 1 else 0 end;
+   v_label := v_season_start::text||'/'||right((v_season_start+1)::text,2);
+   v_season_id := nullif(v_season_ids->>v_label,'')::uuid;
+  end if;
+  if exists(select 1 from public.player_club_history h where h.career_id=p_career_id
+    and h.owner_id=v_owner and h.player_id=v_player_id and h.club_id=v_club_id
+    and h.from_date is not distinct from nullif(v_row->>'fromDate','')::date
+    and h.to_date is not distinct from nullif(v_row->>'toDate','')::date
+    and h.squad_status is not distinct from nullif(v_row->>'status','')
+    and h.notes=v_row->>'notes') then continue; end if;
+  insert into public.player_club_history(owner_id,career_id,player_id,club_id,season_id,
+    from_date,to_date,squad_status,transfer_fee,notes)
+  values(v_owner,p_career_id,v_player_id,v_club_id,v_season_id,
+    nullif(v_row->>'fromDate','')::date,nullif(v_row->>'toDate','')::date,
+    nullif(v_row->>'status',''),null,v_row->>'notes');
+  v_player_club_history_created:=v_player_club_history_created+1;
  end loop;
 
  -- Estatísticas agregadas por jogador e época.
