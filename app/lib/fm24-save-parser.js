@@ -1420,8 +1420,31 @@ function parsePlayerSeasonStats(archive, people, targetClubId, teamClubMap, onPr
       });
     }
   }
+  const aggregate = new Map();
+  for (const row of out) {
+    const key = [row.personId,row.seasonStart,row.clubId].join('|');
+    if (!aggregate.has(key)) aggregate.set(key, {
+      personId:row.personId,clubId:row.clubId,seasonStart:row.seasonStart,
+      appearances:0,starts:0,substituteAppearances:0,minutes:0,goals:0,assists:0,
+      playerOfMatch:0,goalsConceded:0,cleanSheets:0,yellowCards:0,redCards:0,
+      ratedAppearances:0,ratingTotal:0,teamIds:[],kindBreakdown:{}
+    });
+    const a = aggregate.get(key);
+    for (const field of ['appearances','starts','substituteAppearances','minutes','goals','assists','playerOfMatch','goalsConceded','cleanSheets','yellowCards','redCards','ratedAppearances','ratingTotal']) a[field] += row[field] || 0;
+    if (!a.teamIds.includes(row.teamId)) a.teamIds.push(row.teamId);
+    a.kindBreakdown[row.kindName] = {
+      ...(a.kindBreakdown[row.kindName] || {appearances:0,goals:0,assists:0,minutes:0}),
+      appearances:(a.kindBreakdown[row.kindName]?.appearances || 0) + row.appearances,
+      goals:(a.kindBreakdown[row.kindName]?.goals || 0) + row.goals,
+      assists:(a.kindBreakdown[row.kindName]?.assists || 0) + row.assists,
+      minutes:(a.kindBreakdown[row.kindName]?.minutes || 0) + row.minutes
+    };
+  }
   onProgress?.(94, 'A ler estatísticas por época…');
-  return out;
+  return [...aggregate.values()].map(row => ({
+    ...row,
+    averageRating:row.ratedAppearances ? Math.round((row.ratingTotal / row.ratedAppearances / 10) * 100) / 100 : null
+  }));
 }
 function parseTrophies(archive, targetClubId, teamClubMap, competitionKeys) {
   const dt = archive.member('comp_history_dt.cmt'), dv = dvOf(dt), out = [], seen = new Set();
