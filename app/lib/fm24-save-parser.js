@@ -1646,7 +1646,7 @@ function buildPlayerClubHistory(transfers, people, gameDate) {
       if(currentClub!==null) add(currentClub,currentStart,transfer.date,currentStatus,entryType,entryFee);
       currentClub=transfer.toClubId;
       currentStart=transfer.date;
-      currentStatus=transfer.type==='Empréstimo'?'Emprestado':'Plantel';
+      currentStatus='Passagem';
       entryType=transfer.type;
       entryFee=transfer.fee;
     }
