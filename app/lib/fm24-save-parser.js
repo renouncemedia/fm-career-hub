@@ -1681,12 +1681,26 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const target = normalise(clubName);
   const managedClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target ||
     (target === 'sporting' && normalise(c.shortName).startsWith('sporting')));
-  if (!managedClub) return {managedClubId:null,clubs:[],competitions:[],seasons:[],matches:[],transfers:[],playerSeasonRecords:[],trophies:[],managerPersonId:null,managerSpells:[],warnings:['Não foi possível associar o clube da carreira aos clubes do save; o histórico não foi importado.']};
+  if (!managedClub) return {managedClubId:null,clubs:[],competitions:[],seasons:[],matches:[],transfers:[],playerSeasonRecords:[],playerMatchStats:[],trophies:[],managerPersonId:null,managerSpells:[],warnings:['Não foi possível associar o clube da carreira aos clubes do save; o histórico não foi importado.']};
   const teamClubMap = new Map(teams.filter(t=>t.club!==null).map(t=>[t.ordinal+1,t.club]));
   const competitionKeys = readCompetitionKeys(gameDb), stageMap = readCompetitionStages(gameDb, competitionKeys);
   onProgress?.(84, 'A preparar o histórico da carreira…');
   const matches = parseFixtures(archive, managedClub.id, teamClubMap, stageMap, onProgress);
   const transfers = parseTransfers(archive, people, managedClub.id, teamClubMap, onProgress);
+  const matchReports = parseMatchReports(archive, managedClub.id, teamClubMap, onProgress);
+  const fixtureById = new Map(matches.map(match=>[match.fixtureId,match]));
+  const playerMatchStats = [];
+  for (const report of matchReports) {
+    const fixture = fixtureById.get(report.fixtureId);
+    if (!fixture) continue;
+    fixture.stadium = report.stadium;
+    fixture.minutes = report.minutes;
+    fixture.playerOfTheMatch = report.playerOfTheMatch;
+    for (const player of report.players) playerMatchStats.push({
+      ...player,fixtureId:report.fixtureId,stageId:fixture.stageId,
+      homeTeam:report.homeTeam,awayTeam:report.awayTeam,clubId:teamClubMap.get(player.teamId)??null
+    });
+  }
   const playerSeasonRecords = parsePlayerSeasonStats(archive, people, managedClub.id, teamClubMap, globalGroupCounts, onProgress);
   const trophies = parseTrophies(archive, managedClub.id, teamClubMap, competitionKeys);
   const managerHistory = parseManagerSpellsForClub(archive, rawPeople, managerName, managedClub.id, teams, matches, gameDate);
@@ -1714,7 +1728,7 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const historyClubs = [...clubIds].filter(id=>id!==null&&clubMap.has(id)).map(id=>{
     const c=clubMap.get(id);return {fm24ClubId:c.id,name:c.name,shortName:c.shortName,country:NATIONS[String(c.nation)]||null};
   });
-  return {managedClubId:managedClub.id,clubs:historyClubs,competitions:[...competitionMap.values()],seasons,matches,transfers,playerSeasonRecords,trophies,managerPersonId:managerHistory.managerPersonId,managerSpells:managerHistory.spells,warnings:managerHistory.warning?[managerHistory.warning]:[]};
+  return {managedClubId:managedClub.id,clubs:historyClubs,competitions:[...competitionMap.values()],seasons,matches,transfers,playerSeasonRecords,playerMatchStats,trophies,managerPersonId:managerHistory.managerPersonId,managerSpells:managerHistory.spells,warnings:managerHistory.warning?[managerHistory.warning]:[]};
 }
 
 /* ---------- orquestrador: parseSave ---------- */
