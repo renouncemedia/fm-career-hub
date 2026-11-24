@@ -381,6 +381,9 @@ begin
     and r.player_id=v_player_id and r.season_id=v_season_id) then
    update public.player_season_records r set
     club_id=coalesce(v_club_id,r.club_id),
+    age=coalesce(nullif(v_row->>'age','')::integer,r.age),
+    ca=coalesce(nullif(v_row->>'ca','')::integer,r.ca),
+    pa=coalesce(nullif(v_row->>'pa','')::integer,r.pa),
     appearances=nullif(v_row->>'appearances','')::integer,
     starts=nullif(v_row->>'starts','')::integer,
     substitute_appearances=nullif(v_row->>'substituteAppearances','')::integer,
@@ -404,9 +407,10 @@ begin
     and (r.source='Save FM24' or r.source is null);
    if found then v_stats_updated:=v_stats_updated+1; end if;
   else
-   insert into public.player_season_records(owner_id,career_id,player_id,season_id,club_id,
+   insert into public.player_season_records(owner_id,career_id,player_id,season_id,club_id,age,ca,pa,
     appearances,starts,substitute_appearances,minutes_played,goals,assists,average_rating,attributes,source)
    values(v_owner,p_career_id,v_player_id,v_season_id,v_club_id,
+    nullif(v_row->>'age','')::integer,nullif(v_row->>'ca','')::integer,nullif(v_row->>'pa','')::integer,
     nullif(v_row->>'appearances','')::integer,nullif(v_row->>'starts','')::integer,
     nullif(v_row->>'substituteAppearances','')::integer,nullif(v_row->>'minutes','')::integer,
     nullif(v_row->>'goals','')::integer,nullif(v_row->>'assists','')::integer,
