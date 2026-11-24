@@ -1460,6 +1460,8 @@ function parseTrophies(archive, targetClubId, teamClubMap, competitionKeys) {
 }
 
 
+const MATCH_POSITION_CODES = ['GK','SW','DR','DL','DC','WBR','WBL','DM','MR','ML','MC','AMR','AML','AMC','ST'];
+function matchPosition(bits) { for(let i=0;i<MATCH_POSITION_CODES.length;i++) if(bits & (1<<i)) return MATCH_POSITION_CODES[i]; return null; }
 const MATCH_PLAYER_OFFSETS = {
   goals:19,shots:40,shotsOnTarget:41,assists:55,clearCutChances:56,dribbles:57,fouls:59,
   yellowCards:62,redCards:63,minuteOff:66,addedTimeOff:68,minuteOn:70,injuryMinute:71,
@@ -1517,7 +1519,7 @@ function parseMatchPlayer(bytes, at, teamId, matchMinutes, playerOfTheMatch) {
   const minutesPlayed = played ? Math.max(0,Math.min(matchMinutes,endMinute)-startMinute) : 0;
   const personId = dv.getUint32(at, true);
   return {
-    personId,teamId,started:startSlot!==0,minutesPlayed,position:null,
+    personId,teamId,started:startSlot!==0,minutesPlayed,position:matchPosition(startSlot||endSlot),
     rating:played ? Math.round((ratingRaw/100)*100)/100 : null,
     goals:values.goals,assists:values.assists,shots:values.shots,shotsOnTarget:values.shotsOnTarget,
     keyPasses:values.keyPasses,tackles:values.tackles,interceptions:values.interceptions,
