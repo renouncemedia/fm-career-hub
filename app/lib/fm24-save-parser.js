@@ -1671,7 +1671,7 @@ function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId
   const normalise = value => String(value || '').replace(/\bGOAT\b/ig,'').normalize('NFD')
     .replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const wanted = normalise(managerName);
-  if (!wanted) return {managerPersonId:null,spells:[],warning:'Para importar o percurso do treinador, é necessário identificar o nome exacto do treinador dentro do save.'};
+  if (!wanted) return {managerPersonId:null,spells:[],warning:'Percurso do treinador não importado: é necessário o nome exacto do treinador dentro do save (o nome da carreira na aplicação pode ser diferente).'};
   const candidates = rawPeople.filter(p => p.id >= 0 &&
     (normalise(p.name) === wanted || normalise(p.fullName) === wanted));
   if (candidates.length !== 1) return {managerPersonId:null,spells:[],warning:
