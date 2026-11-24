@@ -1334,16 +1334,14 @@ function parseTransfers(archive, people, targetClubId, teamClubMap, onProgress) 
   const raw = archive.member('transfer_man.dat'), first = findMagic(raw);
   if (first < 0) return [];
   const careerIds = new Set(people.filter(p => p.clubId === targetClubId || p.contractClubId === targetClubId).map(p => p.id));
-  if (!careerIds.size) return [];
   const parts = [raw.subarray(0, first)];
   let count = 0;
   forEachInnerBlock(raw, block => { parts.push(block); count++; });
-  const stream = concatBytes(parts), dv = dvOf(stream), result = [], seen = new Set();
+  const stream = concatBytes(parts), dv = dvOf(stream), clubTransfers = [], playerTransfers = [], seen = new Set();
   const kinds = {1:'Transferência',2:'Troca',3:'Empréstimo',4:'Transferência livre',6:'Compensação',7:'Agente livre',8:'Troca',9:'Dispensa',14:'Formação'};
   for (let p = 0; p + 37 <= stream.length; p++) {
     if (stream[p] !== 6 || stream[p + 5] !== 0 || stream[p + 10] !== 0 || stream[p + 15] !== 0) continue;
     const personId = dv.getUint32(p + 1, true);
-    if (!careerIds.has(personId)) continue;
     const toTeam = dv.getUint32(p + 6, true), fromTeam = dv.getUint32(p + 11, true), squad = dv.getUint32(p + 16, true);
     if ([toTeam, fromTeam, squad].some(team => team !== 0xffffffff && team >= 500000)) continue;
     const date = dateFromPacked(stream, p + 33);
@@ -1354,14 +1352,17 @@ function parseTransfers(archive, people, targetClubId, teamClubMap, onProgress) 
     const dedupe = [personId,date,kind,fromClubId,toClubId,fee,feeWithAddOns].join('|');
     if (seen.has(dedupe)) continue;
     seen.add(dedupe);
-    result.push({
-      personId, date, kind, type:kinds[kind] || 'Outra operação',
-      fromClubId, toClubId, fee, addOns:Math.max(0, feeWithAddOns - fee), currency:'GBP',
-      originalFee:fee, originalFeeWithAddOns:feeWithAddOns
-    });
+    const entry={
+      personId,date,kind,type:kinds[kind]||'Outra operação',
+      fromClubId,toClubId,fee,addOns:Math.max(0,feeWithAddOns-fee),currency:'GBP',
+      originalFee:fee,originalFeeWithAddOns:feeWithAddOns
+    };
+    if(careerIds.has(personId)) playerTransfers.push(entry);
+    if(fromClubId===targetClubId||toClubId===targetClubId) clubTransfers.push(entry);
   }
-  onProgress?.(91, 'A ler transferências dos jogadores da carreira…');
-  return result.sort((a,b)=>a.date.localeCompare(b.date));
+  onProgress?.(91, 'A ler transferências do clube e dos jogadores…');
+  const sort=(items)=>items.sort((a,b)=>a.date.localeCompare(b.date));
+  return {clubTransfers:sort(clubTransfers),playerTransfers:sort(playerTransfers)};
 }
 function readStatGroups(ls) {
   if (!ls || ls.length < 12) return [];
@@ -1740,8 +1741,10 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   const competitionKeys = readCompetitionKeys(gameDb), stageMap = readCompetitionStages(gameDb, competitionKeys);
   onProgress?.(84, 'A preparar o histórico da carreira…');
   const matches = parseFixtures(archive, managedClub.id, teamClubMap, stageMap, onProgress);
-  const transfers = parseTransfers(archive, people, managedClub.id, teamClubMap, onProgress);
-  const playerClubHistory = buildPlayerClubHistory(transfers, people, gameDate);
+  const transferData = parseTransfers(archive, people, managedClub.id, teamClubMap, onProgress);
+  const transfers = transferData.clubTransfers;
+  const playerTransfers = transferData.playerTransfers;
+  const playerClubHistory = buildPlayerClubHistory(playerTransfers, people, gameDate);
   const matchReports = parseMatchReports(archive, managedClub.id, teamClubMap, onProgress);
   const fixturesByComposite = new Map();
   for (const match of matches) {
@@ -1852,7 +1855,7 @@ function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate
   }));
   const clubIds = new Set([managedClub.id]);
   for (const match of matches) { clubIds.add(match.homeClubId); clubIds.add(match.awayClubId); }
-  for (const transfer of transfers) { if(transfer.fromClubId!==null)clubIds.add(transfer.fromClubId);if(transfer.toClubId!==null)clubIds.add(transfer.toClubId); }
+  for (const transfer of [...transfers,...playerTransfers]) { if(transfer.fromClubId!==null)clubIds.add(transfer.fromClubId);if(transfer.toClubId!==null)clubIds.add(transfer.toClubId); }
   const clubMap = new Map(clubs.map(c=>[c.id,c]));
   const historyClubs = [...clubIds].filter(id=>id!==null&&clubMap.has(id)).map(id=>{
     const c=clubMap.get(id);return {fm24ClubId:c.id,name:c.name,shortName:c.shortName,country:NATIONS[String(c.nation)]||null};
