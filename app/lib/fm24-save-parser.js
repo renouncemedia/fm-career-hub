@@ -1483,16 +1483,13 @@ function matchPlayerRecordSize(bytes, at) {
   if (at < 1 || at + 200 > bytes.length) return null;
   let end = at + 195;
   const shots = bytes[at + 194];
-  if (shots > 30) return null;
   for (let i=0;i<shots;i++) {
     if (end + 3 > bytes.length) return null;
     const parts = bytes[end + 2];
-    if (parts > 20) return null;
     end += 3 + 15 * parts;
   }
   if (end + 5 > bytes.length) return null;
   const items = bytes[end + 3];
-  if (items > 30) return null;
   const size = end + 5 + 11 * items - at;
   return size >= 200 && at + size <= bytes.length ? size : null;
 }
