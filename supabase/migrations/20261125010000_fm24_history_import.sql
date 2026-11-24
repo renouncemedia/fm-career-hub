@@ -45,6 +45,11 @@ declare
  v_stats_created integer := 0;
  v_stats_updated integer := 0;
  v_trophies_created integer := 0;
+ v_manager_spells_created integer := 0;
+ v_started_on date;
+ v_ended_on date;
+ v_start_season_id uuid;
+ v_end_season_id uuid;
  v_date date;
 begin
  if v_owner is null then
@@ -62,7 +67,8 @@ begin
     or jsonb_array_length(coalesce(p_history->'matches','[]'::jsonb))>50000
     or jsonb_array_length(coalesce(p_history->'transfers','[]'::jsonb))>50000
     or jsonb_array_length(coalesce(p_history->'playerSeasonRecords','[]'::jsonb))>50000
-    or jsonb_array_length(coalesce(p_history->'trophies','[]'::jsonb))>10000 then
+    or jsonb_array_length(coalesce(p_history->'trophies','[]'::jsonb))>10000
+    or jsonb_array_length(coalesce(p_history->'managerSpells','[]'::jsonb))>1000 then
   raise exception 'O histórico do save excede os limites de importação.';
  end if;
 
@@ -154,6 +160,39 @@ begin
    where id=v_season_id and owner_id=v_owner;
   end if;
   v_season_ids := v_season_ids || jsonb_build_object(v_label,v_season_id::text);
+ end loop;
+
+ -- Percurso do treinador, validado contra os resultados da equipa principal.
+ for v_row in select value from jsonb_array_elements(coalesce(p_history->'managerSpells','[]'::jsonb))
+ loop
+  v_club_id := nullif(v_club_ids->>coalesce(v_row->>'clubId',''),'')::uuid;
+  v_started_on := nullif(v_row->>'startedOn','')::date;
+  v_ended_on := nullif(v_row->>'endedOn','')::date;
+  if v_club_id is null or v_started_on is null then continue; end if;
+  v_season_start := extract(year from v_started_on)::integer -
+    case when extract(month from v_started_on)<7 then 1 else 0 end;
+  v_label := v_season_start::text||'/'||right((v_season_start+1)::text,2);
+  v_start_season_id := nullif(v_season_ids->>v_label,'')::uuid;
+  v_end_season_id := null;
+  if v_ended_on is not null then
+   v_season_start := extract(year from v_ended_on)::integer -
+    case when extract(month from v_ended_on)<7 then 1 else 0 end;
+   v_label := v_season_start::text||'/'||right((v_season_start+1)::text,2);
+   v_end_season_id := nullif(v_season_ids->>v_label,'')::uuid;
+  end if;
+  v_notes := 'FM24 manager person='||coalesce(v_row->>'personId','?')||
+    '; W-D-L='||coalesce(v_row->>'won','0')||'-'||coalesce(v_row->>'drawn','0')||'-'||coalesce(v_row->>'lost','0')||
+    '; reason='||coalesce(v_row->>'reason','?')||
+    '; league wins='||coalesce(v_row->>'leagueWins','0')||
+    '; cup wins='||coalesce(v_row->>'cupWins','0');
+  if exists(select 1 from public.career_club_spells s where s.career_id=p_career_id
+    and s.owner_id=v_owner and s.club_id=v_club_id and s.started_on=v_started_on
+    and s.ended_on is not distinct from v_ended_on and s.notes=v_notes) then continue; end if;
+  insert into public.career_club_spells(owner_id,career_id,club_id,start_season_id,end_season_id,
+    started_on,ended_on,is_managed_club,notes)
+  values(v_owner,p_career_id,v_club_id,v_start_season_id,v_end_season_id,
+    v_started_on,v_ended_on,true,v_notes);
+  v_manager_spells_created := v_manager_spells_created+1;
  end loop;
 
  -- Jogos da equipa: só são atualizados registos previamente importados pelo FM24.
@@ -317,7 +356,7 @@ begin
    'seasonsCreated',v_created_seasons,'matchesCreated',v_matches_created,
    'matchesUpdated',v_matches_updated,'transfersCreated',v_transfers_created,
    'seasonStatsCreated',v_stats_created,'seasonStatsUpdated',v_stats_updated,
-   'trophiesCreated',v_trophies_created
+   'trophiesCreated',v_trophies_created,'managerSpellsCreated',v_manager_spells_created
   )
  )
  where j.id=(select x.id from public.import_jobs x where x.owner_id=v_owner and x.career_id=p_career_id
@@ -329,7 +368,7 @@ begin
   'seasons_created',v_created_seasons,'matches_created',v_matches_created,
   'matches_updated',v_matches_updated,'transfers_created',v_transfers_created,
   'season_stats_created',v_stats_created,'season_stats_updated',v_stats_updated,
-  'trophies_created',v_trophies_created
+  'trophies_created',v_trophies_created,'manager_spells_created',v_manager_spells_created
  ));
 end;
 $$;
