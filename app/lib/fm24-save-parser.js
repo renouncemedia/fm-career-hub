@@ -1739,13 +1739,14 @@ function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId
 function buildHistory(archive, competitionKeys, stageMap, people, rawPeople, clubs, teams, gameDate, clubName, managerName, globalGroupCounts, onProgress) {
   const normalise = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const target = normalise(clubName);
-  const exactClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target);
   // "Sporting" é o nome abreviado usado na carreira, mas não é único na base
-  // FM24. Resolver explicitamente para o Sporting Clube de Portugal evita
-  // seleccionar, por ordem alfabética, outro clube chamado Sporting.
-  const managedClub = exactClub || (target === 'sporting'
+  // FM24. Resolver primeiro o Sporting Clube de Portugal evita seleccionar
+  // outro clube com o mesmo nome curto.
+  const sportingPortugal = target === 'sporting'
     ? clubs.find(c => normalise(c.name) === 'sportingclubedeportugal' || normalise(c.shortName) === 'sportingcp')
-    : null);
+    : null;
+  const exactClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target);
+  const managedClub = sportingPortugal || exactClub;
   if (!managedClub) return {managedClubId:null,clubs:[],competitions:[],seasons:[],matches:[],transfers:[],playerClubHistory:[],playerSeasonRecords:[],playerMatchStats:[],trophies:[],managerPersonId:null,managerSpells:[],warnings:['Não foi possível associar o clube da carreira aos clubes do save; o histórico não foi importado.']};
   const teamClubMap = new Map(teams.filter(t=>t.club!==null).map(t=>[t.ordinal+1,t.club]));
   onProgress?.(84, 'A preparar o histórico da carreira…');
