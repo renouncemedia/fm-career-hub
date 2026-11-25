@@ -135,12 +135,13 @@ begin
   end if;
   if v_competition_id is null then
    insert into public.competitions(owner_id,career_id,name,competition_type,metadata)
-   values(v_owner,p_career_id,v_name,'FM24',
+   values(v_owner,p_career_id,v_name,coalesce(nullif(v_row->>'type',''),'Competição'),
      jsonb_build_object('fm24CompetitionUid',v_uid,'fm24RawIds',coalesce(v_row->'rawIds','[]'::jsonb),'source','Save FM24'))
    returning id into v_competition_id;
    v_created_competitions := v_created_competitions+1;
   else
    update public.competitions set
+    competition_type=coalesce(nullif(v_row->>'type',''),competition_type),
     metadata=coalesce(metadata,'{}'::jsonb)||jsonb_build_object('fm24CompetitionUid',v_uid,'source','Save FM24')
    where id=v_competition_id and career_id=p_career_id;
   end if;
