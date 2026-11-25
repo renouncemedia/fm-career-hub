@@ -26,10 +26,9 @@ export default function SaveImport({db,career,session,onDone}:Props){
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState("");
  const [done,setDone]=useState("");
- const [fields,setFields]=useState<string[]>(["name","birthDate","nationality","positions","ca","pa","age","club"]);
- const [minPAForCaNovo,setMinPAForCaNovo]=useState(150);
+ const [historySections,setHistorySections]=useState<string[]>(["matches","competitions","seasons","trophies","transfers","playerSeasonRecords","playerMatchStats","playerClubHistory","managerSpells"]);
  const [managerName,setManagerName]=useState("");
- const importFields=[["name","Nome"],["birthDate","Data de nascimento"],["nationality","Nacionalidade"],["positions","Posição"],["ca","CA"],["pa","PA / CA potencial"],["caNovo","CA Novo"],["age","Idade"],["club","Clube"]];
+ const historyOptions=[["matches","Jogos"],["competitions","Competições"],["seasons","Épocas"],["trophies","Troféus"],["transfers","Transferências"],["playerSeasonRecords","Estatísticas por época"],["playerMatchStats","Estatísticas por jogo"],["playerClubHistory","Histórico de clubes"],["managerSpells","Percurso do treinador"]];
  const counts=useMemo(()=>preview?{total:preview.save.players.length,existing:preview.existing,fresh:preview.fresh,ambiguous:preview.ambiguous,unmatched:preview.unmatched,squad:preview.squad,loanedOut:preview.loanedOut,otherClubs:preview.otherClubs,noClub:preview.noClub}:null,[preview]);
  async function inspect(file?:File){
   if(!file)return;
@@ -112,25 +111,24 @@ export default function SaveImport({db,career,session,onDone}:Props){
      positions:p.positions,external_ids:externalIds
     };
     if(existing){
-     if(fields.includes("name"))playerPatch.full_name=p.fullName||p.name;
-     if(fields.includes("birthDate"))playerPatch.date_of_birth=p.birthDate;
-     if(fields.includes("nationality"))playerPatch.nationality=(await import("../lib/fm24-save-parser")).NATIONS[String(p.nationId)]||null;
-     if(fields.includes("positions"))playerPatch.positions=p.positions;
+     playerPatch.full_name=p.fullName||p.name;
+     playerPatch.date_of_birth=p.birthDate;
+     playerPatch.nationality=(await import("../lib/fm24-save-parser")).NATIONS[String(p.nationId)]||null;
+     playerPatch.positions=p.positions;
     }
     const linkId=existing?linkByPlayer.get(existing.id):null;
     const careerPatch:any=existing?{updated_at:new Date().toISOString(),squad_status:isLoanedOut?"Emprestado":"Plantel principal"}:{
      squad_status:isLoanedOut?"Emprestado":"Plantel principal",
      club_name:p.club||null,position:p.positions.join(", "),ca:p.ca,
-     ca_novo:fields.includes("caNovo")&&p.pa>=minPAForCaNovo?p.ca:null,
+     ca_novo:null,
      pa:p.pa,age:p.age
     };
     if(existing){
-     if(fields.includes("ca"))careerPatch.ca=p.ca;
-     if(fields.includes("pa"))careerPatch.pa=p.pa;
-     if(fields.includes("caNovo")&&p.pa>=minPAForCaNovo)careerPatch.ca_novo=p.ca;
-     if(fields.includes("age"))careerPatch.age=p.age;
-     if(fields.includes("club"))careerPatch.club_name=p.club||null;
-     if(fields.includes("positions"))careerPatch.position=p.positions.join(", ");
+     careerPatch.ca=p.ca;
+     careerPatch.pa=p.pa;
+     careerPatch.age=p.age;
+     careerPatch.club_name=p.club||null;
+     careerPatch.position=p.positions.join(", ");
     }
     rows.push({
      player_id:existing?.id||null,
@@ -148,11 +146,14 @@ export default function SaveImport({db,career,session,onDone}:Props){
    }
    if(!rows.length)throw new Error("Não existem jogadores válidos para importar.");
    setMessage("A guardar todos os registos numa única transação...");
+   const selectedHistory=Object.fromEntries(Object.entries(preview.save.history).map(([key,value])=>[
+    key,historySections.includes(key)?value:(Array.isArray(value)?[]:value)
+   ]));
    const result=await db.rpc("apply_fm24_full_save_import",{
     p_career_id:career.id,
-    p_season:seasonPayload,
+    p_season:historySections.includes("seasons")?seasonPayload:null,
     p_players:rows,
-    p_history:preview.save.history,
+    p_history:selectedHistory,
     p_job:{
      file_name:preview.fileName,
      records_total:preview.save.players.length,
@@ -174,8 +175,8 @@ export default function SaveImport({db,career,session,onDone}:Props){
   <p className="intro">Lê o ficheiro .fm e importa o plantel, épocas, jogos, competições, troféus, transferências, histórico de clubes e estatísticas individuais e de jogo. O parser só valida saves no formato <b>24.3.0+0</b>.</p>
   <label className="module-description" style={{display:"block",marginBottom:10}}>Nome exacto do treinador no save (opcional)<input type="text" value={managerName} onChange={e=>setManagerName(e.target.value)} placeholder="Necessário para importar o percurso do treinador" style={{display:"block",width:"100%",marginTop:6}}/></label>
   <input ref={input} type="file" accept=".fm" hidden onChange={e=>void inspect(e.target.files?.[0])}/>
-  <div className="panel-actions"><button className="outline-btn" disabled={busy} onClick={()=>input.current?.click()}>{busy?"A analisar...":"Selecionar save .fm"}</button>{preview&&<button className="primary-btn" disabled={busy||fields.length===0} onClick={()=>void apply()}>Importar save completo</button>}</div>
-  {preview&&<div className="import-field-picker"><h3>Escolhe o que atualizar nos jogadores existentes</h3><p className="module-description">Os campos desmarcados ficam exatamente como estão. Os jogadores novos recebem os dados disponíveis no ficheiro.</p><div className="form-grid">{importFields.map(([key,label])=><label key={key}><input type="checkbox" checked={fields.includes(key)} onChange={e=>setFields(old=>e.target.checked?[...old,key]:old.filter(x=>x!==key))}/> {label}</label>)}</div>{fields.includes("caNovo")&&<label className="ca-novo-threshold">Atualizar CA Novo apenas em jogadores com PA igual ou superior a <input type="number" min="0" max="200" value={minPAForCaNovo} onChange={e=>setMinPAForCaNovo(Number(e.target.value)||0)}/></label>}</div>}
+  <div className="panel-actions"><button className="outline-btn" disabled={busy} onClick={()=>input.current?.click()}>{busy?"A analisar...":"Selecionar save .fm"}</button>{preview&&<button className="primary-btn" disabled={busy} onClick={()=>void apply()}>Importar save completo</button>}</div>
+  {preview&&<div className="import-field-picker"><h3>Dados da carreira a importar</h3><p className="module-description">Esta secção controla apenas os dados históricos e gerais da carreira. Os dados dos jogadores são tratados automaticamente nos campos correspondentes do separador Equipa.</p><div className="form-grid">{historyOptions.map(([key,label])=><label key={key}><input type="checkbox" checked={historySections.includes(key)} onChange={e=>setHistorySections(old=>e.target.checked?[...old,key]:old.filter(x=>x!==key))}/> {label}</label>)}</div></div>}
   {busy&&<div style={{marginTop:14}}><div className="filters"><b>{progress}%</b><span>{message}</span></div><div style={{height:7,background:"var(--line)",borderRadius:8,overflow:"hidden"}}><div style={{height:"100%",width:progress+"%",background:"var(--accent)",transition:"width .2s"}}/></div></div>}
   {preview&&<div className="stat-grid" style={{marginTop:10}}><article><span>JOGOS</span><strong>{preview.save.history.matches.length}</strong></article><article><span>COMPETIÇÕES</span><strong>{preview.save.history.competitions.length}</strong></article><article><span>TROFÉUS</span><strong>{preview.save.history.trophies.length}</strong></article><article><span>TRANSFERÊNCIAS</span><strong>{preview.save.history.transfers.length}</strong></article><article><span>ESTATÍSTICAS POR ÉPOCA</span><strong>{preview.save.history.playerSeasonRecords.length}</strong></article><article><span>ÉPOCAS</span><strong>{preview.save.history.seasons.length}</strong></article><article><span>PASSAGENS DO TREINADOR</span><strong>{preview.save.history.managerSpells.length}</strong></article><article><span>ESTATÍSTICAS DE JOGO</span><strong>{preview.save.history.playerMatchStats.length}</strong></article><article><span>HISTÓRICO DE CLUBES</span><strong>{preview.save.history.playerClubHistory.length}</strong></article></div>}{counts&&<><div className="stat-grid" style={{marginTop:16}}><article><span>JOGADORES NO SAVE</span><strong>{counts.total}</strong></article><article><span>DO TEU CLUBE</span><strong>{counts.squad}</strong></article><article><span>EMPRÉSTIMOS</span><strong>{counts.loanedOut}</strong></article><article><span>OUTROS CLUBES (IGNORADOS)</span><strong>{counts.otherClubs}</strong></article><article><span>SEM CLUBE (IGNORADOS)</span><strong>{counts.noClub}</strong></article></div><div className="stat-grid" style={{marginTop:10}}><article><span>JÁ NA CARREIRA</span><strong>{counts.existing}</strong></article><article><span>REGISTOS NOVOS</span><strong>{counts.fresh}</strong></article><article><span>NOMES AMBÍGUOS</span><strong>{counts.ambiguous}</strong></article><article><span>A IMPORTAR</span><strong>{counts.squad}</strong></article></div></>}
   {preview&&preview.save.warnings.length>0&&<p className="alert">{preview.save.warnings.join(" ")}</p>}
