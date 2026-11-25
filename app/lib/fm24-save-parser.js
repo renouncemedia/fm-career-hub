@@ -1731,14 +1731,13 @@ function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId
   return {managerPersonId:manager.id,spells:managerSpells,warning:null};
 }
 
-function buildHistory(archive, gameDb, people, rawPeople, clubs, teams, gameDate, clubName, managerName, globalGroupCounts, onProgress) {
+function buildHistory(archive, competitionKeys, stageMap, people, rawPeople, clubs, teams, gameDate, clubName, managerName, globalGroupCounts, onProgress) {
   const normalise = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const target = normalise(clubName);
   const managedClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target ||
     (target === 'sporting' && normalise(c.shortName).startsWith('sporting')));
   if (!managedClub) return {managedClubId:null,clubs:[],competitions:[],seasons:[],matches:[],transfers:[],playerClubHistory:[],playerSeasonRecords:[],playerMatchStats:[],trophies:[],managerPersonId:null,managerSpells:[],warnings:['Não foi possível associar o clube da carreira aos clubes do save; o histórico não foi importado.']};
   const teamClubMap = new Map(teams.filter(t=>t.club!==null).map(t=>[t.ordinal+1,t.club]));
-  const competitionKeys = readCompetitionKeys(gameDb), stageMap = readCompetitionStages(gameDb, competitionKeys);
   onProgress?.(84, 'A preparar o histórico da carreira…');
   const matches = parseFixtures(archive, managedClub.id, teamClubMap, stageMap, onProgress);
   const transferData = parseTransfers(archive, people, managedClub.id, teamClubMap, onProgress);
@@ -1882,8 +1881,8 @@ async function parseSave(rawBytes, onProgress = () => {}, options = {}) {
   if (formatVersion !== '24.3.0+0')
     throw new SaveError('UNSUPPORTED_VERSION', `Formato de save ${formatVersion} não suportado. É necessário um save FM24 24.3.`);
   onProgress(10, 'A ler base de dados de jogadores…'); await tick();
-  const b = a.member('game_db.dat');
-  const dv = dvOf(b);
+  let b = a.member('game_db.dat');
+  let dv = dvOf(b);
   if (b.length < 40) throw new SaveError('TRUNCATED', 'O cabeçalho da base de dados está incompleto.');
   const day0 = dv.getUint16(36, true) & 511, year = dv.getUint16(38, true);
   if (day0 < 1 || day0 > 366 || year < 2020 || year > 2300)
@@ -1894,8 +1893,10 @@ async function parseSave(rawBytes, onProgress = () => {}, options = {}) {
   onProgress(35, 'A ler registos de jogadores…'); await tick();
   const people = await readPeople(b, dv, names, (frac) => onProgress(35 + 17 * frac, 'A ler registos de jogadores…'));
   onProgress(52, 'A ler capacidade e atributos…'); await tick();
-  const blocks = await readAbilities(b, dv, names.end, (frac) => onProgress(52 + 16 * frac, 'A ler capacidade e atributos…'));
-  const { linked, ambiguous, unbound } = linkAbilities(people, blocks);
+  let blocks = await readAbilities(b, dv, names.end, (frac) => onProgress(52 + 16 * frac, 'A ler capacidade e atributos…'));
+  const abilityLinks = linkAbilities(people, blocks);
+  let linked = abilityLinks.linked;
+  const { ambiguous, unbound } = abilityLinks;
   onProgress(68, 'A resolver clubes e plantéis…'); await tick();
   const clubs = readClubs(b, dv, names.start);
   const clubMap = new Map(clubs.map((c) => [c.id, c]));
@@ -1962,7 +1963,17 @@ async function parseSave(rawBytes, onProgress = () => {}, options = {}) {
       statsGroupCounts.set(group, (statsGroupCounts.get(group) || 0) + 1);
     }
   }
-  const history = buildHistory(a, b, players, people, clubs, teams, gameDate, options.clubName || '', options.managerName || '', statsGroupCounts, onProgress);
+  const competitionKeys = readCompetitionKeys(b);
+  const stageMap = readCompetitionStages(b, competitionKeys);
+  // O game_db.dat descomprimido tem mais de 200 MB neste save. Libertamos
+  // a base e os blocos de atributos antes de abrir o histórico (que inclui
+  // outro ficheiro de 268 MB), para reduzir o pico de memória no browser.
+  linked = null;
+  blocks = null;
+  dv = null;
+  b = null;
+  await tick();
+  const history = buildHistory(a, competitionKeys, stageMap, players, people, clubs, teams, gameDate, options.clubName || '', options.managerName || '', statsGroupCounts, onProgress);
   onProgress(96, 'A preparar a lista de jogadores…');
   const warnings = [...history.warnings];
   if (ambiguous + unbound)
