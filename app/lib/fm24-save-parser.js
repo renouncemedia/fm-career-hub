@@ -1672,8 +1672,8 @@ function buildPlayerClubHistory(transfers, people, gameDate) {
 }
 
 function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId, teams, matches, gameDate) {
-  const normalise = value => String(value || '').replace(/\\bGOAT\\b/ig,'').normalize('NFD')
-    .replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const normalise = value => String(value || '').replace(/\bGOAT\b/ig,'').normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const wanted = normalise(managerName);
   if (!wanted) return {managerPersonId:null,spells:[],warning:'Percurso do treinador não importado: é necessário o nome exacto do treinador dentro do save (o nome da carreira na aplicação pode ser diferente).'};
   const candidates = rawPeople.filter(p => p.id >= 0 &&
