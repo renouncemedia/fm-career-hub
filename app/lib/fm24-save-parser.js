@@ -1697,27 +1697,39 @@ function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId
       spells.push({personId,startedOn,endedOn,won,drawn,lost,reason:dt[at+26],leagueWins:dt[at+27],cupWins:dt[at+28]});
     }
     if (!spells.some(spell=>spell.personId===manager.id)) continue;
-    const compared = spells.filter(spell=>spell.startedOn&&spell.endedOn&&spell.won+spell.drawn+spell.lost>=4)
-      .sort((a,b)=>(b.won+b.drawn+b.lost)-(a.won+a.drawn+a.lost)).slice(0,5);
+    const compared = spells.filter(spell=>spell.startedOn&&(spell.endedOn||gameDate)&&spell.won+spell.drawn+spell.lost>=4)
+      .sort((a,b)=>(b.won+b.drawn+b.lost)-(a.won+a.drawn+a.lost)).slice(0,12);
     if (!compared.length) continue;
     for (const teamId of seniorTeams) {
-      let difference=0,games=0;
+      let sampled=0,difference=0,expectedGames=0;
       for (const spell of compared) {
-        let wins=0,draws=0,losses=0;
+        const actual={won:0,drawn:0,lost:0};
+        const seenFixtures=new Set();
         for (const match of matches) {
           if (match.homeTeam!==teamId&&match.awayTeam!==teamId) continue;
           if (match.homeScore===null || match.awayScore===null) continue;
           if (match.date<spell.startedOn || match.date>(spell.endedOn || gameDate)) continue;
+          const fixtureKey=String(match.fixtureId)+'|'+match.date;
+          if(seenFixtures.has(fixtureKey)) continue;
+          seenFixtures.add(fixtureKey);
           const teamWon = match.homeTeam===teamId ? match.homeScore>match.awayScore : match.awayScore>match.homeScore;
-          const level = match.homeScore===match.awayScore;
-          if (level) draws++;
-          else if (teamWon) wins++;
-          else losses++;
+          if(match.homeScore===match.awayScore) actual.drawn++;
+          else if(teamWon) actual.won++;
+          else actual.lost++;
         }
-        difference += Math.abs(wins-spell.won)+Math.abs(draws-spell.drawn)+Math.abs(losses-spell.lost);
-        games += spell.won+spell.drawn+spell.lost;
+        const observed=actual.won+actual.drawn+actual.lost;
+        if(!observed) continue;
+        const recorded=spell.won+spell.drawn+spell.lost;
+        const scale=observed/recorded;
+        difference += Math.abs(actual.won-spell.won*scale)+Math.abs(actual.drawn-spell.drawn*scale)+Math.abs(actual.lost-spell.lost*scale);
+        sampled += observed;
+        expectedGames += recorded;
       }
-      if (games >= 10 && difference/games <= 0.12) validGroups.push({index,teamId,spells,score:difference/games,games});
+      // Os resultados do ficheiro de jogos podem ser apenas uma amostra do histórico completo.
+      // Comparamos a distribuição de vitórias/empates/derrotas nessa amostra, não os totais absolutos.
+      const score=sampled?difference/sampled:1;
+      if (sampled >= 8 && expectedGames >= 20 && score <= 0.24)
+        validGroups.push({index,teamId,spells,score,games:sampled});
     }
   }
   validGroups.sort((a,b)=>a.score-b.score||b.games-a.games);
