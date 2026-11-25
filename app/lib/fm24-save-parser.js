@@ -1723,21 +1723,29 @@ function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId
     }
     if(records.length) recordsByManager.set(candidate.managerId,{...candidate,records});
   }
-  // A primeira associação válida no ficheiro é o registo principal do treinador.
-  // Os IDs seguintes são snapshots/entradas auxiliares do mesmo perfil e não
-  // devem ser somados, pois podem conter períodos sobrepostos.
-  const selected=managerIds.find(x=>recordsByManager.has(x.managerId));
-  if(!selected) return {managerPersonId:manager.id,spells:[],warning:'O treinador está associado à equipa, mas o save não contém passagens históricas válidas para esse registo.'};
-  const spells=recordsByManager.get(selected.managerId).records
-    .sort((a,b)=>a.startedOn.localeCompare(b.startedOn));
+  // O FM24 pode criar vários IDs internos para a mesma pessoa ao longo
+  // da carreira. Todos os registos associados ao mesmo treinador/equipa
+  // fazem parte do percurso e devem ser reunidos cronologicamente.
+  const allRecords=[...recordsByManager.values()].flatMap(entry=>entry.records);
+  if(!allRecords.length) return {managerPersonId:manager.id,spells:[],warning:'O treinador foi identificado, mas o save não contém passagens históricas válidas para a equipa principal.'};
+  const seen=new Set();
+  const spells=allRecords.sort((a,b)=>a.startedOn.localeCompare(b.startedOn)).filter(record=>{
+    const key=[record.teamId,record.startedOn,record.endedOn||'',record.won,record.drawn,record.lost].join('|');
+    if(seen.has(key))return false;seen.add(key);return true;
+  });
   return {managerPersonId:manager.id,spells,warning:null};
 }
 
 function buildHistory(archive, competitionKeys, stageMap, people, rawPeople, clubs, teams, gameDate, clubName, managerName, globalGroupCounts, onProgress) {
   const normalise = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const target = normalise(clubName);
-  const managedClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target ||
-    (target === 'sporting' && normalise(c.shortName).startsWith('sporting')));
+  const exactClub = clubs.find(c => normalise(c.shortName) === target || normalise(c.name) === target);
+  // "Sporting" é o nome abreviado usado na carreira, mas não é único na base
+  // FM24. Resolver explicitamente para o Sporting Clube de Portugal evita
+  // seleccionar, por ordem alfabética, outro clube chamado Sporting.
+  const managedClub = exactClub || (target === 'sporting'
+    ? clubs.find(c => normalise(c.name) === 'sportingclubedeportugal' || normalise(c.shortName) === 'sportingcp')
+    : null);
   if (!managedClub) return {managedClubId:null,clubs:[],competitions:[],seasons:[],matches:[],transfers:[],playerClubHistory:[],playerSeasonRecords:[],playerMatchStats:[],trophies:[],managerPersonId:null,managerSpells:[],warnings:['Não foi possível associar o clube da carreira aos clubes do save; o histórico não foi importado.']};
   const teamClubMap = new Map(teams.filter(t=>t.club!==null).map(t=>[t.ordinal+1,t.club]));
   onProgress?.(84, 'A preparar o histórico da carreira…');
