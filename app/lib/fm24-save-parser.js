@@ -1604,7 +1604,10 @@ function parseMatchReports(archive, targetClubId, teamClubMap, onProgress) {
     for(let p=start;p+28<=safeEnd;p++){
       if(bytes[p]!==2 || bytes[p+1]!==2) continue;
       const report=parseMatchReportAt(bytes,p,targetClubId,teamClubMap);
-      if(report && !reports.has(report.fixtureId)) reports.set(report.fixtureId,report);
+      if(report) {
+        const key=[report.fixtureId,report.homeTeam,report.awayTeam].join('|');
+        if(!reports.has(key)) reports.set(key,report);
+      }
     }
     processed=base+safeEnd;
   };
@@ -1669,8 +1672,8 @@ function buildPlayerClubHistory(transfers, people, gameDate) {
 }
 
 function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId, teams, matches, gameDate) {
-  const normalise = value => String(value || '').replace(/\bGOAT\b/ig,'').normalize('NFD')
-    .replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const normalise = value => String(value || '').replace(/\\bGOAT\\b/ig,'').normalize('NFD')
+    .replace(/[\\u0300-\\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
   const wanted = normalise(managerName);
   if (!wanted) return {managerPersonId:null,spells:[],warning:'Percurso do treinador não importado: é necessário o nome exacto do treinador dentro do save (o nome da carreira na aplicação pode ser diferente).'};
   const candidates = rawPeople.filter(p => p.id >= 0 &&
@@ -1681,66 +1684,53 @@ function parseManagerSpellsForClub(archive, rawPeople, managerName, targetClubId
   const manager = candidates[0];
   const dt = archive.member('tc_manager_history_dt.cmt');
   const ls = archive.member('tc_manager_history_ls.dat');
-  const groups = readStatGroups(ls), dv = dvOf(dt);
+  const managerData = archive.member('manager_manager.dat');
+  const groups = readStatGroups(ls), dv = dvOf(dt), mdv = dvOf(managerData);
   const seniorTeams = teams.filter(t=>t.club===targetClubId&&t.type===100).map(t=>t.ordinal+1);
   if (!seniorTeams.length) return {managerPersonId:manager.id,spells:[],warning:'Não foi possível identificar a equipa principal para validar o histórico do treinador.'};
-  const validGroups = [];
-  for (let index=0; index<groups.length; index++) {
-    const spells = [];
-    for (const offset of groups[index]) {
-      const at = 8 + offset;
-      if (offset < 0 || offset % 31 !== 0 || at + 31 > dt.length) continue;
-      const personId = dv.getUint32(at,true);
-      const startedOn = dateFromPacked(dt,at+4);
-      const endedOn = dateFromPacked(dt,at+8);
-      const won = dv.getUint16(at+20,true), drawn = dv.getUint16(at+22,true), lost = dv.getUint16(at+24,true);
-      spells.push({personId,startedOn,endedOn,won,drawn,lost,reason:dt[at+26],leagueWins:dt[at+27],cupWins:dt[at+28]});
-    }
-    if (!spells.some(spell=>spell.personId===manager.id)) continue;
-    const compared = spells.filter(spell=>spell.startedOn&&(spell.endedOn||gameDate)&&spell.won+spell.drawn+spell.lost>=4)
-      .sort((a,b)=>(b.won+b.drawn+b.lost)-(a.won+a.drawn+a.lost)).slice(0,12);
-    if (!compared.length) continue;
-    for (const teamId of seniorTeams) {
-      let sampled=0,difference=0,expectedGames=0;
-      for (const spell of compared) {
-        const actual={won:0,drawn:0,lost:0};
-        const seenFixtures=new Set();
-        for (const match of matches) {
-          if (match.homeTeam!==teamId&&match.awayTeam!==teamId) continue;
-          if (match.homeScore===null || match.awayScore===null) continue;
-          if (match.date<spell.startedOn || match.date>(spell.endedOn || gameDate)) continue;
-          const fixtureKey=String(match.fixtureId)+'|'+match.date;
-          if(seenFixtures.has(fixtureKey)) continue;
-          seenFixtures.add(fixtureKey);
-          const teamWon = match.homeTeam===teamId ? match.homeScore>match.awayScore : match.awayScore>match.homeScore;
-          if(match.homeScore===match.awayScore) actual.drawn++;
-          else if(teamWon) actual.won++;
-          else actual.lost++;
-        }
-        const observed=actual.won+actual.drawn+actual.lost;
-        if(!observed) continue;
-        const recorded=spell.won+spell.drawn+spell.lost;
-        const scale=observed/recorded;
-        difference += Math.abs(actual.won-spell.won*scale)+Math.abs(actual.drawn-spell.drawn*scale)+Math.abs(actual.lost-spell.lost*scale);
-        sampled += observed;
-        expectedGames += recorded;
-      }
-      // Os resultados do ficheiro de jogos podem ser apenas uma amostra do histórico completo.
-      // Comparamos a distribuição de vitórias/empates/derrotas nessa amostra, não os totais absolutos.
-      const score=sampled?difference/sampled:1;
-      if (sampled >= 8 && expectedGames >= 20 && score <= 0.24)
-        validGroups.push({index,teamId,spells,score,games:sampled});
-    }
+
+  // O ficheiro de manager usa um identificador interno diferente do person ID.
+  // Cada registo liga [person ID][manager ID] à equipa, guardando a equipa
+  // nos últimos 9 bytes antes do registo seguinte da mesma pessoa.
+  const managerIds=[];
+  for(let p=0;p+8<=managerData.length;p++) {
+    if(mdv.getUint32(p,true)!==manager.id) continue;
+    const managerId=mdv.getUint32(p+4,true);
+    if(!managerId||managerId===0xffffffff) continue;
+    const limit=Math.min(managerData.length,p+180);
+    let next=p+4;
+    while(next+4<=limit&&mdv.getUint32(next,true)!==manager.id) next++;
+    if(next+4>limit||next-9<p+8) continue;
+    const teamId=mdv.getUint32(next-9,true);
+    if(!seniorTeams.includes(teamId)) continue;
+    if(!managerIds.some(x=>x.managerId===managerId&&x.teamId===teamId))
+      managerIds.push({managerId,teamId});
   }
-  validGroups.sort((a,b)=>a.score-b.score||b.games-a.games);
-  if (!validGroups.length) return {managerPersonId:manager.id,spells:[],warning:'O histórico do treinador existe, mas não foi possível associá-lo com segurança ao Sporting.'};
-  const best = validGroups[0];
-  const managerSpells = best.spells.filter(spell=>spell.personId===manager.id&&spell.startedOn).map(spell=>({
-    personId:manager.id,clubId:targetClubId,teamId:best.teamId,startedOn:spell.startedOn,
-    endedOn:spell.endedOn,won:spell.won,drawn:spell.drawn,lost:spell.lost,
-    reason:spell.reason,leagueWins:spell.leagueWins,cupWins:spell.cupWins
-  }));
-  return {managerPersonId:manager.id,spells:managerSpells,warning:null};
+  if(!managerIds.length) return {managerPersonId:manager.id,spells:[],warning:'O registo do treinador foi encontrado, mas não foi possível associá-lo à equipa principal da carreira.'};
+
+  const recordsByManager=new Map();
+  for(const candidate of managerIds) {
+    const records=[];
+    for(const group of groups) for(const offset of group) {
+      const at=8+offset;
+      if(offset<0||offset%31!==0||at+31>dt.length) continue;
+      if(dv.getUint32(at,true)!==candidate.managerId) continue;
+      const startedOn=dateFromPacked(dt,at+4),endedOn=dateFromPacked(dt,at+8);
+      const won=dv.getUint16(at+20,true),drawn=dv.getUint16(at+22,true),lost=dv.getUint16(at+24,true);
+      if(!startedOn||won+drawn+lost===0) continue;
+      records.push({personId:manager.id,clubId:targetClubId,teamId:candidate.teamId,startedOn,endedOn,
+        won,drawn,lost,reason:dt[at+26],leagueWins:dt[at+27],cupWins:dt[at+28]});
+    }
+    if(records.length) recordsByManager.set(candidate.managerId,{...candidate,records});
+  }
+  // A primeira associação válida no ficheiro é o registo principal do treinador.
+  // Os IDs seguintes são snapshots/entradas auxiliares do mesmo perfil e não
+  // devem ser somados, pois podem conter períodos sobrepostos.
+  const selected=managerIds.find(x=>recordsByManager.has(x.managerId));
+  if(!selected) return {managerPersonId:manager.id,spells:[],warning:'O treinador está associado à equipa, mas o save não contém passagens históricas válidas para esse registo.'};
+  const spells=recordsByManager.get(selected.managerId).records
+    .sort((a,b)=>a.startedOn.localeCompare(b.startedOn));
+  return {managerPersonId:manager.id,spells,warning:null};
 }
 
 function buildHistory(archive, competitionKeys, stageMap, people, rawPeople, clubs, teams, gameDate, clubName, managerName, globalGroupCounts, onProgress) {
