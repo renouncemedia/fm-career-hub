@@ -27,7 +27,7 @@ export default function SaveImport({db,career,session,onDone}:Props){
  const [error,setError]=useState("");
  const [done,setDone]=useState("");
  const [historySections,setHistorySections]=useState<string[]>(["matches","competitions","seasons","trophies","transfers","playerSeasonRecords","playerMatchStats","playerClubHistory","managerSpells"]);
- const [managerName,setManagerName]=useState("");
+ const [managerName,setManagerName]=useState(String(career?.manager_name||career?.name||"").replace(/\\bGOAT\\b/ig,"").trim());
  const historyOptions=[["matches","Jogos"],["competitions","Competições"],["seasons","Épocas"],["trophies","Troféus"],["transfers","Transferências"],["playerSeasonRecords","Estatísticas por época"],["playerMatchStats","Estatísticas por jogo"],["playerClubHistory","Histórico de clubes"],["managerSpells","Percurso do treinador"]];
  const counts=useMemo(()=>preview?{total:preview.save.players.length,existing:preview.existing,fresh:preview.fresh,ambiguous:preview.ambiguous,unmatched:preview.unmatched,squad:preview.squad,loanedOut:preview.loanedOut,otherClubs:preview.otherClubs,noClub:preview.noClub}:null,[preview]);
  async function inspect(file?:File){
